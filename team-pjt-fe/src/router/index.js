@@ -6,7 +6,7 @@ import BoardPost from '../pages/BoardPost.vue'
 
 const routes = [
   { path: '/', name: 'Main', component: Main },
-  { path: '/board', name: 'Board', component: Board },
+  { path: '/board', name: 'Board', component: BoardList },
   { path: '/board/:post_number', name: 'BoardPost', component: BoardPost, props:true}
 ]
 
