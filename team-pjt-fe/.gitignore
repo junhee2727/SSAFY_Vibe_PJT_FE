@@ -39,7 +39,6 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # static
-static
 
 # Env / secrets
 .env
