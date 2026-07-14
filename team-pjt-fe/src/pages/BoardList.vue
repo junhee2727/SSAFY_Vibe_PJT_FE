@@ -56,47 +56,77 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { fetchPosts } from '../services/mockBoardApi' // 새로 만든 mock API
 import PostItem from '../components/PostItem.vue'
 import HeaderNav from '../components/HeaderNav.vue'
 
-const allPosts = ref([
-  { id:15, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:14, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:13, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:12, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:11, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:10, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:9,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:8,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:7,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:6,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:5,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:4,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:3,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:2,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
-  { id:1,  title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 }
-])
+const route = useRoute()
+const router = useRouter()
 
-const currentPage = ref(1)
 const perPage = 10
-const totalPages = Math.ceil(allPosts.value.length / perPage)
 
-const posts = computed(() => {
-  // 간단 페이징(샘플 데이터)
-  const start = (currentPage.value - 1) * perPage
-  return allPosts.value.slice(start, start + perPage)
-})
+// 상태
+const posts = ref([])
+const totalCount = ref(0)
+const totalPages = ref(1)
+const currentPage = ref(Number(route.query.page || 1))
+const isLoading = ref(false)
+const error = ref(null)
 
-// controls (UI만 동작)
-const filterPeriod = ref('')
-const filterType = ref('')
-const q = ref('')
+// 필터 바인딩 (UI에서 사용 중인 것들)
+const filterPeriod = ref(route.query.period || '')
+const filterType = ref(route.query.type || '')
+const q = ref(route.query.q || '')
 
-function goto(n){ currentPage.value = n }
-function prevPage(){ if(currentPage.value>1) currentPage.value-- }
-function nextPage(){ if(currentPage.value<totalPages) currentPage.value++ }
-function applyFilters(){ /* 실제 데이터 연동시 필터 적용 로직 연결 */ }
+// 로드 함수: 쿼리/필터에 따라 fetchPosts 호출
+async function load() {
+  isLoading.value = true
+  error.value = null
+
+  // 현재 페이지와 필터값을 route.query에서 우선 가져오도록 한다
+  const page = Number(route.query.page || currentPage.value || 1)
+  const period = route.query.period || filterPeriod.value
+  const type = route.query.type || filterType.value
+  const query = route.query.q || q.value
+
+  try {
+    const res = await fetchPosts({ page, perPage, period, type, q: query })
+    posts.value = res.data
+    totalCount.value = res.totalCount
+    totalPages.value = res.totalPages
+    currentPage.value = page
+  } catch (err) {
+    error.value = err.message || '데이터를 불러오는 중 오류가 발생했습니다.'
+    posts.value = []
+    totalCount.value = 0
+    totalPages.value = 1
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 페이지 이동 함수들 — router.push로 쿼리 동기화
+function goto(n) {
+  const next = Math.max(1, Math.min(Number(n) || 1, totalPages.value))
+  router.push({ query: { ...route.query, page: next } })
+}
+function prevPage() { if (currentPage.value > 1) goto(currentPage.value - 1) }
+function nextPage() { if (currentPage.value < totalPages.value) goto(currentPage.value + 1) }
+
+// 필터 적용: 페이지 리셋 + 쿼리 갱신 + 재조회
+function applyFilters() {
+  const newQuery = { ...route.query, page: 1 }
+  if (filterPeriod.value) newQuery.period = filterPeriod.value; else delete newQuery.period
+  if (filterType.value) newQuery.type = filterType.value; else delete newQuery.type
+  if (q.value) newQuery.q = q.value; else delete newQuery.q
+  router.push({ query: newQuery })
+}
+
+// 쿼리 변경을 감지해서 로드
+onMounted(load)
+watch(() => route.query, () => { load() }, { deep: true })
 </script>
 
 <style scoped>
