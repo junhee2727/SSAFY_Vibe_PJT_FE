@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import PostItem from './PostItem.vue'
+import PostItemBrief from './PostItemBrief.vue'
 
 const posts = ref([
   { id:1, title:'Lorem ipsum dolor sit amet', date:'07.01' },
@@ -17,7 +17,7 @@ const posts = ref([
     <ul class="posts">
       <li v-for="p in posts" :key="p.id">
         <router-link :to="`/board/${p.id}`" class="post-link">
-          <PostItem :title="p.title" :date="p.date" />
+          <PostItemBrief :title="p.title" :date="p.date" />
         </router-link>
       </li>
     </ul>

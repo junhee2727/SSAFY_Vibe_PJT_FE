@@ -1,4 +1,5 @@
 <template>
+  <HeaderNav />
   <section class="board-list">
     <h2 class="page-title">전체 글보기</h2>
 
@@ -57,6 +58,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import PostItem from '../components/PostItem.vue'
+import HeaderNav from '../components/HeaderNav.vue'
 
 const allPosts = ref([
   { id:15, title:'Lorem ipsum dolor sit ametLorem ipsum dolor sit ametLorem ipsum...', author:'이준희', date:'2026.08.13', views:31 },
