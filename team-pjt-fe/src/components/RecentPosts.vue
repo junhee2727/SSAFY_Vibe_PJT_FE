@@ -16,7 +16,9 @@ const posts = ref([
     <h3 class="section-title">최근 게시글</h3>
     <ul class="posts">
       <li v-for="p in posts" :key="p.id">
-        <PostItem :title="p.title" :date="p.date" />
+        <router-link :to="`/board/${p.id}`" class="post-link">
+          <PostItem :title="p.title" :date="p.date" />
+        </router-link>
       </li>
     </ul>
   </section>
@@ -26,4 +28,6 @@ const posts = ref([
 .section-title { margin:0 0 1rem 0; font-size:1.25rem; }
 .posts { list-style:none; padding:0; margin:0; }
 .posts li { border-bottom:1px solid #f0f0f0; padding:10px 0; }
+.post-link { display: block; color: inherit; text-decoration: none; }
+.post-link { padding: 0 0; }        /* 클릭 가능한 영역의 패딩을 a에 둠 */
 </style>
