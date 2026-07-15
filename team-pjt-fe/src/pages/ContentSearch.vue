@@ -48,7 +48,7 @@ async function searchContent(){
   if(!selectedType.value || !searchQuery.value) return
   searching.value = true
   try{
-    const res = await fetch(`/static/json/${selectedType.value}`)
+    const res = await fetch(`../../static/json/${selectedType.value}`)
     if(!res.ok) return
     const data = await res.json()
     const arr = Array.isArray(data) ? data : (data.items || [])
