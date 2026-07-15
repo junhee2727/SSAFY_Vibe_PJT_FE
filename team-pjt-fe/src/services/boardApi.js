@@ -13,12 +13,15 @@ function formatDate(src){
 
 function normalizePost(item){
   return {
-    id: item.id ?? item.BRD_SEQ ?? '',
-    title: item.title ?? item.BRD_TITLE ?? '',
+    id: item.id ?? item.BRD_SEQ ?? item.contentid ?? '',
+    title: item.title ?? item.BRD_TITLE ?? item.title ?? '',
     author: item.username ?? item.author ?? item.BRD_USERNAME ?? '익명',
     date: item.created_at ? formatDate(item.created_at) : item.date ?? item.BRD_CREATE ?? '',
     views: item.views ?? 0,
-    content: item.content ?? item.BRD_CONTENT ?? '',
+    content: item.content ?? item.BRD_CONTENT ?? item.BRD_CONTENT ?? '',
+    // preserve variants so category-filtering can use them
+    content_type: item.content_type ?? item.contentType ?? item.contenttypeid ?? item.BRD_CONTENTTYPEID ?? null,
+    content_id: item.content_id ?? item.contentId ?? item.contentid ?? item.BRD_CONTENTID ?? null,
     BRD_SEQ: item.BRD_SEQ ?? String(item.id ?? '')
   }
 }
