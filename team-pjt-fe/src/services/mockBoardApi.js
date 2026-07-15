@@ -17,6 +17,16 @@ const _all = [
   { id:1,  title:'Lorem ipsum dolor sit ametLorem ipsum ...', author:'이준희', date:'2026.08.13', views:31, category:1, BRD_SEQ:'1' }
 ]
 
+// ensure each item has BRD_CONTENT for detail rendering
+_all.forEach(item => {
+  if (!item.BRD_CONTENT) item.BRD_CONTENT = `<p>${item.title}</p>`
+})
+
+// mock comments storage
+const _comments = [
+  // { id: 'c1', postId: 1, author: '테스터', content: '테스트 댓글', date: '2026.08.14' }
+]
+
 function _formatDate(d = new Date()){ 
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -114,6 +124,66 @@ export async function createPost(payload = {}){
       } catch (err) {
         reject(err)
       }
+    }, delay)
+  })
+}
+
+// fetch single post detail
+export async function fetchPostDetail(postId){
+  const delay = 150 + Math.floor(Math.random()*200)
+  return new Promise((resolve, reject)=>{
+    setTimeout(()=>{
+      const id = Number(postId)
+      const item = _all.find(p=> Number(p.id) === id || Number(p.BRD_SEQ) === id || p.BRD_SEQ === String(postId))
+      if(!item){ reject(new Error('post not found')); return }
+      // increment views in mock (note: in real app server should handle atomic increment)
+      item.views = (item.views||0) + 1
+      // return normalized shape
+      resolve({ id: item.id, title: item.title, author: item.author, date: item.date, views: item.views, content: item.BRD_CONTENT, BRD_SEQ: item.BRD_SEQ })
+    }, delay)
+  })
+}
+
+// comments API
+export async function fetchComments(postId){
+  const delay = 80 + Math.floor(Math.random()*120)
+  return new Promise((resolve)=>{
+    setTimeout(()=>{
+      const items = _comments.filter(c=> String(c.postId) === String(postId))
+      resolve(items)
+    }, delay)
+  })
+}
+
+export async function createComment(postId, payload){
+  const delay = 80 + Math.floor(Math.random()*120)
+  return new Promise((resolve, reject)=>{
+    setTimeout(()=>{
+      try{
+        if(!payload || !payload.content) throw new Error('content required')
+        const id = 'c' + (Date.now())
+        const date = _formatDate()
+        const item = { id, postId, author: payload.author || '익명', content: payload.content, date, password: payload.password || null }
+        _comments.push(item)
+        resolve({ data: item })
+      }catch(err){ reject(err) }
+    }, delay)
+  })
+}
+
+export async function deleteComment(commentId, password){
+  const delay = 60 + Math.floor(Math.random()*100)
+  return new Promise((resolve, reject)=>{
+    setTimeout(()=>{
+      const idx = _comments.findIndex(c=> c.id === commentId)
+      if(idx === -1){ reject(new Error('comment not found')); return }
+      const item = _comments[idx]
+      // require password match if set
+      if(item.password){
+        if(!password || String(password) !== String(item.password)){ reject(new Error('invalid password')); return }
+      }
+      const [removed] = _comments.splice(idx,1)
+      resolve({ data: removed })
     }, delay)
   })
 }
