@@ -11,6 +11,7 @@
       <router-link :to="{ name: 'Board', query: { category: '여행코스' } }">여행코스</router-link>
       <router-link :to="{ name: 'Board', query: { category: '축제공연행사' } }">축제/공연/행사</router-link>
       <router-link :to="{ name: 'Board', query: { category: '일반' } }">일반</router-link>
+      <router-link :to="{ name: 'Chat' }">챗봇</router-link>
     </nav>
   </header>
 </template>

@@ -5,7 +5,7 @@ const baseURL = import.meta.env.VITE_API_BASE_URL || 'https://ssafy-vibe-pjt-be.
 
 const api = axios.create({
   baseURL,
-  timeout: 10000,
+  timeout: 100000,
   headers: { 'Content-Type': 'application/json' },
 })
 
