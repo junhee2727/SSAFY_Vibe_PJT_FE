@@ -187,3 +187,44 @@ export async function deleteComment(commentId, password){
     }, delay)
   })
 }
+
+// update post (requires password if post has one)
+export async function updatePost(postId, payload = {}, password){
+  const delay = 120 + Math.floor(Math.random()*200)
+  return new Promise((resolve, reject)=>{
+    setTimeout(()=>{
+      const idx = _all.findIndex(p=> String(p.id) === String(postId) || String(p.BRD_SEQ) === String(postId))
+      if(idx === -1){ reject(new Error('post not found')); return }
+      const item = _all[idx]
+      // password check if exists
+      if(item.BRD_PASSWORD){
+        if(!password || String(password) !== String(item.BRD_PASSWORD)){ reject(new Error('invalid password')); return }
+      }
+      // apply updates
+      if(payload.BRD_TITLE !== undefined) item.BRD_TITLE = payload.BRD_TITLE
+      if(payload.BRD_CONTENT !== undefined) item.BRD_CONTENT = payload.BRD_CONTENT
+      item.BRD_MODIFIED = _formatDate()
+      // sync top-level fields used by UI
+      item.title = item.BRD_TITLE
+      item.content = item.BRD_CONTENT
+      resolve({ data: item })
+    }, delay)
+  })
+}
+
+// delete post (requires password if post has one)
+export async function deletePost(postId, password){
+  const delay = 120 + Math.floor(Math.random()*200)
+  return new Promise((resolve, reject)=>{
+    setTimeout(()=>{
+      const idx = _all.findIndex(p=> String(p.id) === String(postId) || String(p.BRD_SEQ) === String(postId))
+      if(idx === -1){ reject(new Error('post not found')); return }
+      const item = _all[idx]
+      if(item.BRD_PASSWORD){
+        if(!password || String(password) !== String(item.BRD_PASSWORD)){ reject(new Error('invalid password')); return }
+      }
+      const [removed] = _all.splice(idx,1)
+      resolve({ data: removed })
+    }, delay)
+  })
+}

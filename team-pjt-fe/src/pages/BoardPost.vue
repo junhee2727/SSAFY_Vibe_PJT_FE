@@ -17,9 +17,25 @@
 
 		<div class="post-actions">
 			<button class="btn" @click="backToList">목록으로</button>
-			<button class="btn" disabled>수정 (TODO)</button>
-			<button class="btn" disabled>삭제 (TODO)</button>
+			<button class="btn" @click="goEdit">수정</button>
+			<button class="btn" @click="doDeletePost">삭제</button>
 		</div>
+
+		<!-- edit form -->
+		<section v-if="isEditing" class="edit-section">
+			<h3>게시글 수정</h3>
+			<div class="row">
+				<input v-model="editForm.BRD_TITLE" class="control" />
+			</div>
+			<div class="row">
+				<textarea v-model="editForm.BRD_CONTENT" rows="8" class="control"></textarea>
+			</div>
+			<div class="row">
+				<input v-model="editForm.password" type="password" placeholder="비밀번호" class="control small" />
+				<button class="btn" @click="isEditing=false">취소</button>
+				<button class="btn primary" @click="saveEdit">저장</button>
+			</div>
+		</section>
 
 		<section class="comments">
 			<h3>댓글 {{ comments.length }}</h3>
@@ -48,7 +64,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HeaderNav from '../components/HeaderNav.vue'
 import DOMPurify from 'dompurify'
-import { fetchPostDetail, fetchComments, createComment, deleteComment } from '../services/mockBoardApi'
+import { fetchPostDetail, fetchComments, createComment, deleteComment, updatePost, deletePost } from '../services/mockBoardApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -60,6 +76,7 @@ const error = ref(null)
 const comments = ref([])
 const newComment = ref({ author:'익명', content:'' })
 const posting = ref(false)
+// edit flow now handled by BoardWrite page
 
 const sanitizedContent = computed(()=>{
 	return DOMPurify.sanitize(post.value.content || '')
@@ -79,6 +96,22 @@ async function load(){
 	}finally{
 		isLoading.value = false
 	}
+}
+
+
+function goEdit(){
+	const id = post.value.BRD_SEQ || post.value.id
+	router.push({ name: 'BoardWrite', query: { edit: id } })
+}
+
+async function doDeletePost(){
+	const pwd = prompt('게시글 삭제를 위해 비밀번호를 입력하세요')
+	if(pwd === null) return
+	try{
+		await deletePost(post.value.id || post.value.BRD_SEQ, pwd)
+		// navigate back to list
+		router.push({ name: 'Board' })
+	}catch(err){ alert(err.message || '삭제 실패') }
 }
 
 function backToList(){

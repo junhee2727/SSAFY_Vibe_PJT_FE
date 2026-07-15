@@ -42,10 +42,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import HeaderNav from '../components/HeaderNav.vue'
-import { createPost } from '../services/mockBoardApi'
+import { createPost, fetchPostDetail, updatePost } from '../services/mockBoardApi'
 
+const route = useRoute()
 const router = useRouter()
 
 const form = ref({
@@ -57,6 +58,9 @@ const form = ref({
   BRD_CONTENTTYPEID: '',
   BRD_CONTENTID: ''
 })
+
+const isEdit = ref(false)
+const editId = ref(null)
 
 const errors = ref({})
 const isLoading = ref(false)
@@ -116,9 +120,15 @@ async function submit(){
   error.value = null
   try{
     const payload = { ...form.value }
-    const res = await createPost(payload)
-    // on success, go to board list
-    router.push({ name: 'Board' })
+    if(isEdit.value && editId.value){
+      await updatePost(editId.value, { BRD_TITLE: payload.BRD_TITLE, BRD_CONTENT: payload.BRD_CONTENT }, payload.BRD_PASSWORD)
+      // after update, navigate to post detail
+      router.push({ name: 'BoardPost', params: { post_number: editId.value } })
+    } else {
+      const res = await createPost(payload)
+      // on success, go to board list
+      router.push({ name: 'Board' })
+    }
   }catch(err){
     error.value = err.message || '등록 실패'
   }finally{
@@ -134,6 +144,21 @@ onMounted(()=>{
   if(editor.value){
     // initialize editor content once to avoid re-render replacing caret
     editor.value.innerHTML = form.value.BRD_CONTENT || ''
+  }
+  // detect edit mode
+  if(route.query && route.query.edit){
+    editId.value = route.query.edit
+    isEdit.value = true
+    // load post detail and populate form
+    fetchPostDetail(editId.value).then(res=>{
+      form.value.BRD_TITLE = res.title || res.BRD_TITLE || ''
+      form.value.BRD_CONTENT = res.content || res.BRD_CONTENT || ''
+      form.value.BRD_USERNAME = res.author || res.BRD_USERNAME || form.value.BRD_USERNAME
+      // leave BRD_PASSWORD empty for user to enter
+      if(editor.value) editor.value.innerHTML = form.value.BRD_CONTENT || ''
+    }).catch(()=>{
+      // ignore load error here
+    })
   }
 })
 </script>
