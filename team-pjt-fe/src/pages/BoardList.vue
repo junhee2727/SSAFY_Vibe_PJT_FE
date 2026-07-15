@@ -1,7 +1,7 @@
 <template>
   <HeaderNav />
   <section class="board-list">
-    <h2 class="page-title">전체 글보기</h2>
+    <h2 class="page-title">{{ pageTitle }}</h2>
 
     <div class="table-header" aria-hidden="true">
       <div class="col-num">번호</div>
@@ -62,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchPosts } from '../services/boardApi'
 import PostItem from '../components/PostItem.vue'
@@ -70,6 +70,11 @@ import HeaderNav from '../components/HeaderNav.vue'
 
 const route = useRoute()
 const router = useRouter()
+const pageTitle = computed(() => {
+  const cat = route.query.category
+  if (!cat || String(cat) === '전체') return '전체 글보기'
+  return `${String(cat)} 글보기`
+})
 
 const perPage = 10
 const posts = ref([])
