@@ -100,24 +100,37 @@ async function filterByCategory(items, category){
     return items.filter(p => !p.content_type && !p.content_id)
   }
   const file = categoryToFile[category]
-  if(!file) return items
-  try{
-    const resp = await fetch(`/static/json/${file}`)
-    if(!resp.ok) return items
-    const js = await resp.json()
-    const typeId = js.contentTypeId ? String(js.contentTypeId) : (js.contentType ? String(js.contentType) : null)
-    const ids = new Set((js.items || []).map(i => String(i.contentid)))
-    return items.filter(p => {
-      const pt = p.content_type ? String(p.content_type) : null
-      const pid = p.content_id ? String(p.content_id) : null
-      if(typeId && pt && pt === typeId) return true
-      if(pt && pt === file) return true
-      if(pid && ids.has(pid)) return true
-      return false
-    })
-  }catch(e){
-    return items
+  if(!file) return []
+
+  const candidates = [
+    `/json/${file}`,          // public/json/<file>
+    `/static/json/${file}`,   // 기존 경로(개발용)
+    `/${file}`                // public root fallback
+  ]
+
+  for (const path of candidates) {
+    try {
+      const resp = await fetch(path)
+      if(!resp.ok) continue
+      const js = await resp.json()
+      const typeId = js.contentTypeId !== undefined ? String(js.contentTypeId) : (js.contentType ? String(js.contentType) : null)
+      const ids = new Set((js.items || []).map(i => String(i.contentid || i.contentId || i.contentID)))
+      return items.filter(p => {
+        const pt = p.content_type ? String(p.content_type) : null
+        const pid = p.content_id ? String(p.content_id) : null
+        if (typeId && pt && pt === typeId) return true
+        if (pt && pt === file) return true
+        if (pid && ids.has(pid)) return true
+        return false
+      })
+    } catch (e) {
+      // try next candidate
+    }
   }
+
+  // 모두 실패하면 빈 배열 반환(모든 게시글 노출을 방지)
+  console.warn('category JSON not found for', category, 'tried paths:', candidates)
+  return []
 }
 
 async function load() {
