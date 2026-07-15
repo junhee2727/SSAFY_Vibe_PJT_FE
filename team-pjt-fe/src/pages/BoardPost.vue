@@ -64,7 +64,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HeaderNav from '../components/HeaderNav.vue'
 import DOMPurify from 'dompurify'
-import { fetchPostDetail, fetchComments, createComment, deleteComment, updatePost, deletePost } from '../services/mockBoardApi'
+import { fetchPostDetail, fetchComments, createComment, deleteComment, updatePost, deletePost } from '../services/BoardApi'
 
 const route = useRoute()
 const router = useRouter()

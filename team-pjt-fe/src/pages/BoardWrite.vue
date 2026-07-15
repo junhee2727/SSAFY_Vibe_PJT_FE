@@ -57,7 +57,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HeaderNav from '../components/HeaderNav.vue'
-import { createPost, fetchPostDetail, updatePost } from '../services/mockBoardApi'
+import { createPost, fetchPostDetail, updatePost } from '../services/BoardApi'
 
 const route = useRoute()
 const router = useRouter()
