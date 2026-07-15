@@ -22,6 +22,7 @@
 				<div class="related-meta">
 					<div class="r-title">{{ relatedInfo.title }}</div>
 					<div class="r-addr">{{ relatedInfo.addr1 }}</div>
+					<div v-if="relatedInfo._source === '서울_축제공연행사.json'" class="r-dates">{{ formatEventDate(relatedInfo.eventstartdate || relatedInfo.eventstart || relatedInfo.EventStartDate) }} - {{ formatEventDate(relatedInfo.eventenddate || relatedInfo.eventend || relatedInfo.EventEndDate) }}</div>
 				</div>
 			</div>
 		</section>
@@ -115,7 +116,10 @@ async function load(){
 					const data = await r.json()
 					const arr = Array.isArray(data) ? data : (data.items || [])
 					const found = arr.find(it => (it.title && it.title === contentId) || (it.contentid && String(it.contentid) === String(contentId)))
-					if(found) relatedInfo.value = found
+						if(found){
+							found._source = typeFile
+							relatedInfo.value = found
+						}
 				}
 			}catch(e){ /* ignore */ }
 		}
@@ -124,6 +128,29 @@ async function load(){
 	}finally{
 		isLoading.value = false
 	}
+}
+
+function formatEventDate(v){
+	if(!v) return ''
+	const s = String(v).trim()
+	// already YYYY-MM-DD
+	if(/\d{4}-\d{2}-\d{2}/.test(s)) return s
+	// YYYYMMDDhhmmss or YYYYMMDD
+	if(/^(\d{8})(\d{6})?$/.test(s)){
+		const y = s.substr(0,4)
+		const m = s.substr(4,2)
+		const d = s.substr(6,2)
+		return `${y}-${m}-${d}`
+	}
+	// fallback: try parse
+	const dt = new Date(s)
+	if(!Number.isNaN(dt.getTime())){
+		const y = dt.getFullYear()
+		const m = String(dt.getMonth()+1).padStart(2,'0')
+		const d = String(dt.getDate()).padStart(2,'0')
+		return `${y}-${m}-${d}`
+	}
+	return s
 }
 
 
