@@ -3,8 +3,9 @@
   <section class="board-list">
     <h2 class="page-title">{{ pageTitle }}</h2>
 
-    <div class="table-header" aria-hidden="true">
+    <div class="table-header" aria-hidden="true" :class="{ 'with-category': isAllCategory }">
       <div class="col-num">번호</div>
+      <div v-if="isAllCategory" class="col-category">카테고리</div>
       <div class="col-title">제목</div>
       <div class="col-author">작성자</div>
       <div class="col-date">작성일</div>
@@ -14,13 +15,25 @@
     <ul class="posts" role="list">
       <li v-for="p in posts" :key="p.id" class="post-row-wrapper">
         <router-link :to="{ name: 'BoardPost', params: { post_number: p.id } }" class="post-link">
-          <PostItem
-            :id="p.id"
-            :title="p.title"
-            :author="p.author"
-            :date="p.date"
-            :views="p.views"
-          />
+          <template v-if="isAllCategory">
+            <div class="post-row all">
+              <div class="col-num">{{ p.id }}</div>
+              <div class="col-category">{{ p.categoryLabel }}</div>
+              <div class="col-title" :title="p.title">{{ p.title }}</div>
+              <div class="col-author">{{ p.author }}</div>
+              <div class="col-date">{{ p.date }}</div>
+              <div class="col-views">{{ p.views }}</div>
+            </div>
+          </template>
+          <template v-else>
+            <PostItem
+              :id="p.id"
+              :title="p.title"
+              :author="p.author"
+              :date="p.date"
+              :views="p.views"
+            />
+          </template>
         </router-link>
       </li>
     </ul>
@@ -70,10 +83,16 @@ import HeaderNav from '../components/HeaderNav.vue'
 
 const route = useRoute()
 const router = useRouter()
+
 const pageTitle = computed(() => {
   const cat = route.query.category
   if (!cat || String(cat) === '전체') return '전체 글보기'
   return `${String(cat)} 글보기`
+})
+
+const isAllCategory = computed(() => {
+  const cat = route.query.category
+  return !cat || String(cat) === '전체'
 })
 
 const perPage = 10
@@ -99,6 +118,46 @@ const categoryToFile = {
   '축제공연행사': '서울_축제공연행사.json'
 }
 
+// 캐시된 인덱스 (label -> {file,typeId,ids})
+const categoryIndex = ref({})
+const indexBuilt = ref(false)
+
+async function ensureCategoryIndex() {
+  if (indexBuilt.value) return
+  for (const [label, file] of Object.entries(categoryToFile)) {
+    const candidates = [
+      `/json/${file}`,
+      `/static/json/${file}`,
+      `/${file}`
+    ]
+    for (const path of candidates) {
+      try {
+        const resp = await fetch(path)
+        if (!resp.ok) continue
+        const js = await resp.json()
+        const typeId = js.contentTypeId !== undefined ? String(js.contentTypeId) : (js.contentType ? String(js.contentType) : null)
+        const ids = new Set((js.items || []).map(i => String(i.contentid ?? i.contentId ?? i.contentID)))
+        categoryIndex.value[label] = { file, typeId, ids }
+        break
+      } catch (e) {
+        // try next candidate
+      }
+    }
+  }
+  indexBuilt.value = true
+}
+
+function classifyPost(p) {
+  if (!p.content_type && !p.content_id) return '일반'
+  for (const [label, info] of Object.entries(categoryIndex.value)) {
+    if (!info) continue
+    if (info.typeId && p.content_type && String(p.content_type) === info.typeId) return label
+    if (info.ids && p.content_id && info.ids.has(String(p.content_id))) return label
+    if (p.content_type && String(p.content_type) === info.file) return label
+  }
+  return '기타'
+}
+
 async function filterByCategory(items, category){
   if(!category || category === '전체') return items
   if(category === '일반'){
@@ -108,9 +167,9 @@ async function filterByCategory(items, category){
   if(!file) return []
 
   const candidates = [
-    `/json/${file}`,          // public/json/<file>
-    `/static/json/${file}`,   // 기존 경로(개발용)
-    `/${file}`                // public root fallback
+    `/json/${file}`,
+    `/static/json/${file}`,
+    `/${file}`
   ]
 
   for (const path of candidates) {
@@ -133,7 +192,6 @@ async function filterByCategory(items, category){
     }
   }
 
-  // 모두 실패하면 빈 배열 반환(모든 게시글 노출을 방지)
   console.warn('category JSON not found for', category, 'tried paths:', candidates)
   return []
 }
@@ -147,13 +205,14 @@ async function load() {
   const type = route.query.type || filterType.value
   const query = route.query.q || q.value
   try {
-    // 서버에서 모든 게시글을 한 번 가져와서 카테고리 필터 후 클라이언트 페이지네이션
     const resAll = await fetchPosts({ page: 1, perPage: 10000, period, type, q: query })
     let allItems = resAll.data || []
 
-    const cat = route.query.category
-    if (cat) {
-      allItems = await filterByCategory(allItems, String(cat))
+    if (isAllCategory.value) {
+      await ensureCategoryIndex()
+      allItems = allItems.map(p => ({ ...p, categoryLabel: classifyPost(p) }))
+    } else if (route.query.category) {
+      allItems = await filterByCategory(allItems, String(route.query.category))
     }
 
     totalCount.value = allItems.length
@@ -214,12 +273,27 @@ watch(() => route.query, () => { load() }, { deep: true })
   padding: 12px 8px;
   border-bottom: 1px solid #e6e6e6;
   background: #fafafa;
+  align-items: center;
+}
+
+/* when showing category column, shift grid */
+.table-header.with-category {
+  grid-template-columns: 60px 140px 1fr 140px 120px 80px;
 }
 
 .posts { list-style:none; padding:0; margin:0; }
 .post-row-wrapper { border-bottom:1px solid #eee; }
 .post-link { display:block; color:inherit; text-decoration:none; padding:10px 8px; }
 .post-link:hover { background: #fbfdff; }
+
+/* inline "전체" row layout */
+.post-row.all {
+  display: grid;
+  grid-template-columns: 60px 140px 1fr 140px 120px 80px;
+  gap: 12px;
+  align-items: center;
+}
+.post-row.all .col-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 .pagination {
   text-align:center;
