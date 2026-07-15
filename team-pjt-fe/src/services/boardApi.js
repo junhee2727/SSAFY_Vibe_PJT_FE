@@ -18,11 +18,10 @@ function normalizePost(item){
     author: item.username ?? item.author ?? item.BRD_USERNAME ?? '익명',
     date: item.created_at ? formatDate(item.created_at) : item.date ?? item.BRD_CREATE ?? '',
     views: item.views ?? 0,
-    content: item.content ?? item.BRD_CONTENT ?? item.BRD_CONTENT ?? '',
-    // preserve variants so category-filtering can use them
-    content_type: item.content_type ?? item.contentType ?? item.contenttypeid ?? item.BRD_CONTENTTYPEID ?? null,
-    content_id: item.content_id ?? item.contentId ?? item.contentid ?? item.BRD_CONTENTID ?? null,
-    BRD_SEQ: item.BRD_SEQ ?? String(item.id ?? '')
+    content: item.content ?? item.BRD_CONTENT ?? '',
+    BRD_SEQ: item.BRD_SEQ ?? String(item.id ?? ''),
+    BRD_CONTENTTYPEID: item.content_type ?? item.BRD_CONTENTTYPEID ?? item.BRD_CONTENTTYPEID ?? item.contentType ?? undefined,
+    BRD_CONTENTID: item.content_id ?? item.BRD_CONTENTID ?? item.BRD_CONTENTID ?? undefined
   }
 }
 
