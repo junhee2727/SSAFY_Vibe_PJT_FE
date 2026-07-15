@@ -86,23 +86,69 @@ const filterPeriod = ref(route.query.period || '')
 const filterType = ref(route.query.type || '')
 const q = ref(route.query.q || '')
 
+// ----- 카테고리 기능 추가 ------
+const categoryToFile = {
+  '관광지': '서울_관광지.json',
+  '축제/행사': '서울_축제공연행사.json',
+  // '맛집': '서울_맛집.json'  <-- 없으면 아래 기본을 사용하거나 변경 요청
+  '맛집': '서울_문화시설.json', // 기본 제안 — 필요시 수정
+}
+
+async function filterByCategory(items, category){
+  if(!category) return items
+  if(category === '일반'){
+    return items.filter(p => !p.content_type && !p.content_id)
+  }
+  const file = categoryToFile[category]
+  if(!file) return items
+  try{
+    const resp = await fetch(`/static/json/${file}`)
+    if(!resp.ok) return items
+    const js = await resp.json()
+    const typeId = js.contentTypeId ? String(js.contentTypeId) : null
+    const ids = new Set((js.items || []).map(i => String(i.contentid)))
+    return items.filter(p => {
+      const pt = p.content_type ? String(p.content_type) : null
+      const pid = p.content_id ? String(p.content_id) : null
+      // match by stored content_type (could be numeric id or filename) or by content_id present in JSON
+      if(pt && (typeId && pt === typeId)) return true
+      if(pt && pt === file) return true
+      if(pid && ids.has(pid)) return true
+      return false
+    })
+  }catch(e){
+    return items
+  }
+}
+// ----- 카테고리 기능 추가 End ------
+
 // 로드 함수: 쿼리/필터에 따라 fetchPosts 호출
 async function load() {
   isLoading.value = true
   error.value = null
 
-  // 현재 페이지와 필터값을 route.query에서 우선 가져오도록 한다
   const page = Number(route.query.page || currentPage.value || 1)
   const period = route.query.period || filterPeriod.value
   const type = route.query.type || filterType.value
   const query = route.query.q || q.value
-
   try {
-    const res = await fetchPosts({ page, perPage, period, type, q: query })
-    posts.value = res.data
-    totalCount.value = res.totalCount
-    totalPages.value = res.totalPages
-    currentPage.value = page
+    // fetch all posts first (we will page after filtering)
+    const resAll = await fetchPosts({ page: 1, perPage: 10000, period, type, q: query })
+    let allItems = resAll.data || []
+
+    // apply category filter if present
+    const cat = route.query.category
+    if (cat) {
+      allItems = await filterByCategory(allItems, String(cat))
+    }
+
+    // now paginate client-side
+    totalCount.value = allItems.length
+    totalPages.value = Math.max(1, Math.ceil(totalCount.value / perPage))
+    const next = Math.max(1, Math.min(Number(page || 1), totalPages.value))
+    currentPage.value = next
+    const start = (next - 1) * perPage
+    posts.value = allItems.slice(start, start + perPage)
   } catch (err) {
     error.value = err.message || '데이터를 불러오는 중 오류가 발생했습니다.'
     posts.value = []
