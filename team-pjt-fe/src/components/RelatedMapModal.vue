@@ -61,7 +61,7 @@ async function initMap(){
   const lat = Number(props.lat)
   const lng = Number(props.lng)
   const center = new window.naver.maps.LatLng(lat, lng)
-  mapInstance = new window.naver.maps.Map(mapEl.value, { center, zoom: 18 })
+  mapInstance = new window.naver.maps.Map(mapEl.value, { center, zoom: 14 })
   marker = new window.naver.maps.Marker({ position: center, map: mapInstance })
   const infowindow = new window.naver.maps.InfoWindow({ content: `<div style="padding:8px">${props.address || ''}</div>` })
   window.naver.maps.Event.addListener(marker, 'click', () => infowindow.open(mapInstance, marker))
