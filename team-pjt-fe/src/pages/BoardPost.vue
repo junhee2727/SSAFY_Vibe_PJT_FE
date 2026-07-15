@@ -23,9 +23,12 @@
 					<div class="r-title">{{ relatedInfo.title }}</div>
 					<div class="r-addr">{{ relatedInfo.addr1 }}</div>
 					<div v-if="relatedInfo._source === '서울_축제공연행사.json'" class="r-dates">{{ formatEventDate(relatedInfo.eventstartdate || relatedInfo.eventstart || relatedInfo.EventStartDate) }} - {{ formatEventDate(relatedInfo.eventenddate || relatedInfo.eventend || relatedInfo.EventEndDate) }}</div>
+					<div class="map-btn"><button class="btn" @click="showMap = true">지도에서 보기</button></div>
 				</div>
 			</div>
 		</section>
+
+		<RelatedMapModal :visible="showMap" :lat="relatedInfo ? relatedInfo.mapy : null" :lng="relatedInfo ? relatedInfo.mapx : null" :address="relatedInfo ? relatedInfo.addr1 : ''" @close="showMap=false" />
 
 		<div class="post-actions">
 			<button class="btn" @click="backToList">목록으로</button>
@@ -77,6 +80,7 @@ import { useRoute, useRouter } from 'vue-router'
 import HeaderNav from '../components/HeaderNav.vue'
 import DOMPurify from 'dompurify'
 import { fetchPostDetail, fetchComments, createComment, deleteComment, updatePost, deletePost } from '../services/boardApi'
+import RelatedMapModal from '../components/RelatedMapModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -95,6 +99,7 @@ const sanitizedContent = computed(()=>{
 })
 
 const relatedInfo = ref(null)
+const showMap = ref(false)
 
 async function load(){
 	isLoading.value = true
