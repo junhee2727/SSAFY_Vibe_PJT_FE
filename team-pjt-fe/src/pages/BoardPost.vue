@@ -15,6 +15,17 @@
 
 		<article v-if="!isLoading && !error" class="post-content" v-html="sanitizedContent"></article>
 
+		<section v-if="relatedInfo" class="related-info">
+			<h3>관련 정보</h3>
+			<div class="related-row">
+				<img v-if="relatedInfo.firstimage" :src="relatedInfo.firstimage" alt="thumb" />
+				<div class="related-meta">
+					<div class="r-title">{{ relatedInfo.title }}</div>
+					<div class="r-addr">{{ relatedInfo.addr1 }}</div>
+				</div>
+			</div>
+		</section>
+
 		<div class="post-actions">
 			<button class="btn" @click="backToList">목록으로</button>
 			<button class="btn" @click="goEdit">수정</button>
@@ -82,6 +93,8 @@ const sanitizedContent = computed(()=>{
 	return DOMPurify.sanitize(post.value.content || '')
 })
 
+const relatedInfo = ref(null)
+
 async function load(){
 	isLoading.value = true
 	error.value = null
@@ -91,6 +104,21 @@ async function load(){
 		post.value = res
 		// load comments
 		comments.value = await fetchComments(id)
+		// load related content info if present
+		relatedInfo.value = null
+		const typeFile = post.value.BRD_CONTENTTYPEID
+		const contentId = post.value.BRD_CONTENTID
+		if(typeFile && contentId){
+			try{
+				const r = await fetch(`/json/${typeFile}`)
+				if(r.ok){
+					const data = await r.json()
+					const arr = Array.isArray(data) ? data : (data.items || [])
+					const found = arr.find(it => (it.title && it.title === contentId) || (it.contentid && String(it.contentid) === String(contentId)))
+					if(found) relatedInfo.value = found
+				}
+			}catch(e){ /* ignore */ }
+		}
 	}catch(err){
 		error.value = err.message || '불러오기 실패'
 	}finally{
@@ -163,6 +191,11 @@ onMounted(load)
 .post-content img{ max-width:100%; height:auto }
 .post-actions{ display:flex; gap:8px; margin-bottom:12px }
 .comments{ margin-top:16px }
+.related-info{ border:1px solid #eee; padding:12px; margin:12px 0 }
+.related-row{ display:flex; gap:12px; align-items:flex-start }
+.related-row img{ width:160px; height:auto; object-fit:cover }
+.related-meta .r-title{ font-weight:600; margin-bottom:6px }
+.related-meta .r-addr{ color:#666; font-size:0.95rem }
 .comment-list{ list-style:none; padding:0 }
 .comment-item{ border-bottom:1px solid #eee; padding:8px 0 }
 .comment-form{ display:flex; flex-direction:column; gap:8px; margin-top:8px }

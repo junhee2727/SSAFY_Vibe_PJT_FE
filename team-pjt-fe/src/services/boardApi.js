@@ -19,7 +19,9 @@ function normalizePost(item){
     date: item.created_at ? formatDate(item.created_at) : item.date ?? item.BRD_CREATE ?? '',
     views: item.views ?? 0,
     content: item.content ?? item.BRD_CONTENT ?? '',
-    BRD_SEQ: item.BRD_SEQ ?? String(item.id ?? '')
+    BRD_SEQ: item.BRD_SEQ ?? String(item.id ?? ''),
+    BRD_CONTENTTYPEID: item.content_type ?? item.BRD_CONTENTTYPEID ?? item.BRD_CONTENTTYPEID ?? item.contentType ?? undefined,
+    BRD_CONTENTID: item.content_id ?? item.BRD_CONTENTID ?? item.BRD_CONTENTID ?? undefined
   }
 }
 
