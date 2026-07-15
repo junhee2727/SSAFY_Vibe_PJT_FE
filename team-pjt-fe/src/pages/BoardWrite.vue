@@ -1,1 +1,151 @@
-<template />
+<template>
+  <HeaderNav />
+  <section class="board-write">
+    <h2 class="page-title">게시글 작성</h2>
+
+    <form @submit.prevent="submit">    
+      <div class="row">
+        <label>작성자</label>
+        <input v-model="form.BRD_USERNAME" class="control" />
+        <label>비밀번호</label>
+        <input type="password" v-model="form.BRD_PASSWORD" class="control" />
+      </div>
+      <div class="row">
+        <label>제목</label>
+        <input v-model="form.BRD_TITLE" class="control" />
+        <div v-if="errors.BRD_TITLE" class="error">{{ errors.BRD_TITLE }}</div>
+      </div>
+
+
+      <div class="row">
+        <label>본문</label>
+        <div ref="editor" class="editor" contenteditable @input="onEditorInput"></div>
+        <div v-if="errors.BRD_CONTENT" class="error">{{ errors.BRD_CONTENT }}</div>
+      </div>
+
+      <div class="row">
+        <label>이미지 업로드 (임시)</label>
+        <input type="file" @change="onImage" accept="image/*" />
+        <div v-if="uploadedImage">업로드 미리보기: <img :src="uploadedImage" alt="preview" style="max-width:120px"/></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn" @click="cancel">취소</button>
+        <button type="submit" class="btn primary" :disabled="isLoading">등록</button>
+      </div>
+    </form>
+
+    <div v-if="isLoading" class="loading">등록 중...</div>
+    <div v-if="error" class="error">{{ error }}</div>
+  </section>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import HeaderNav from '../components/HeaderNav.vue'
+import { createPost } from '../services/mockBoardApi'
+
+const router = useRouter()
+
+const form = ref({
+  STS_CODE: 'SCRT',
+  BRD_TITLE: '',
+  BRD_CONTENT: '',
+  BRD_PASSWORD: '',
+  BRD_USERNAME: '익명',
+  BRD_CONTENTTYPEID: '',
+  BRD_CONTENTID: ''
+})
+
+const errors = ref({})
+const isLoading = ref(false)
+const error = ref(null)
+const editor = ref(null)
+const uploadedImage = ref(null)
+
+// known content files under static/json
+const contentFiles = [
+  '서울_관광지.json','서울_레포츠.json','서울_문화시설.json','서울_쇼핑.json','서울_숙박.json','서울_여행코스.json','서울_축제공연행사.json'
+]
+const contentIds = ref([])
+
+async function loadContentIds(){
+  contentIds.value = []
+  if(!form.value.BRD_CONTENTTYPEID) return
+  try{
+    const res = await fetch(`/static/json/${form.value.BRD_CONTENTTYPEID}`)
+    if(!res.ok) return
+    const data = await res.json()
+    // try to extract title fields
+    const ids = data.map(d=> d.title || d.name || d.주소 || d.명칭).filter(Boolean)
+    contentIds.value = ids
+  }catch(e){
+    // ignore
+  }
+}
+
+function onEditorInput(){
+  form.value.BRD_CONTENT = editor.value.innerHTML
+}
+
+function exec(cmd){
+  document.execCommand(cmd)
+}
+
+function onImage(e){
+  const f = e.target.files && e.target.files[0]
+  if(!f) return
+  // create temporary URL for preview; in a real app, upload to server
+  uploadedImage.value = URL.createObjectURL(f)
+  // save a mock path
+  form.value._imagePath = `/static/staticImg/${f.name}`
+}
+
+function validate(){
+  errors.value = {}
+  if(!form.value.STS_CODE) errors.value.STS_CODE = '상태를 선택하세요.'
+  if(!form.value.BRD_TITLE || !form.value.BRD_TITLE.trim()) errors.value.BRD_TITLE = '제목을 입력하세요.'
+  if(!form.value.BRD_CONTENT || !form.value.BRD_CONTENT.trim()) errors.value.BRD_CONTENT = '본문을 입력하세요.'
+  return Object.keys(errors.value).length === 0
+}
+
+async function submit(){
+  if(!validate()) return
+  isLoading.value = true
+  error.value = null
+  try{
+    const payload = { ...form.value }
+    const res = await createPost(payload)
+    // on success, go to board list
+    router.push({ name: 'Board' })
+  }catch(err){
+    error.value = err.message || '등록 실패'
+  }finally{
+    isLoading.value = false
+  }
+}
+
+function cancel(){
+  router.back()
+}
+
+onMounted(()=>{
+  if(editor.value){
+    // initialize editor content once to avoid re-render replacing caret
+    editor.value.innerHTML = form.value.BRD_CONTENT || ''
+  }
+})
+</script>
+
+<style scoped>
+.board-write{ max-width:1100px; margin:0 auto; padding:1rem }
+.row{ margin-bottom:12px }
+.control{ padding:8px 10px; border:1px solid #ccc; }
+.editor{ min-height:240px; border:1px solid #ddd; padding:12px; background:#fff }
+.actions{ display:flex; justify-content:flex-end; gap:12px; margin-top:12px }
+.btn{ padding:8px 12px; border:1px solid #333; background:#fff }
+.btn.primary{ background:#0a58ca; color:#fff }
+.error{ color:#b00; margin-top:6px }
+.loading{ color:#666; margin-top:6px }
+</style>

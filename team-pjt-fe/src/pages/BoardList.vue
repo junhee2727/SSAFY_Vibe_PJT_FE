@@ -37,20 +37,26 @@
     </nav>
 
     <form class="board-controls" @submit.prevent>
-      <select v-model="filterPeriod" class="control">
-        <option value="">전체 기간</option>
-        <option value="7">최근 7일</option>
-        <option value="30">최근 30일</option>
-      </select>
+      <div class="controls-left">
+        <select v-model="filterPeriod" class="control">
+          <option value="">전체 기간</option>
+          <option value="7">최근 7일</option>
+          <option value="30">최근 30일</option>
+        </select>
 
-      <select v-model="filterType" class="control">
-        <option value="">전체</option>
-        <option value="post">글</option>
-        <option value="post+comment">글 + 댓글</option>
-      </select>
+        <select v-model="filterType" class="control">
+          <option value="">전체</option>
+          <option value="post">글</option>
+          <option value="post+comment">글 + 댓글</option>
+        </select>
 
-      <input v-model="q" type="search" placeholder="검색어를 입력해주세요" class="search control" />
-      <button class="btn" @click="applyFilters">검색</button>
+        <input v-model="q" type="search" placeholder="검색어를 입력해주세요" class="search control" />
+        <button class="btn" @click="applyFilters">검색</button>
+      </div>
+
+      <div class="controls-right">
+        <button type="button" class="btn primary" @click="goWrite">글쓰기</button>
+      </div>
     </form>
   </section>
 </template>
@@ -124,6 +130,11 @@ function applyFilters() {
   router.push({ query: newQuery })
 }
 
+// navigate to write page
+function goWrite(){
+  router.push({ name: 'BoardWrite' })
+}
+
 // 쿼리 변경을 감지해서 로드
 onMounted(load)
 watch(() => route.query, () => { load() }, { deep: true })
@@ -171,10 +182,12 @@ watch(() => route.query, () => { load() }, { deep: true })
 .board-controls {
   display:flex;
   gap:12px;
-  justify-content:flex-start;
+  justify-content:space-between;
   align-items:center;
   margin-top:1rem;
 }
+.controls-left{ display:flex; gap:12px; align-items:center; width:80%; flex-wrap:wrap; }
+.controls-right{ display:flex; align-items:center; }
 .control { padding:8px 10px; border:1px solid #ccc; border-radius:2px; background:#fff; }
 .search { flex:1 1 320px; }
 .btn { padding:8px 14px; border:1px solid #333; background:#fff; cursor:pointer; }
