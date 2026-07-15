@@ -204,7 +204,7 @@ async function submit(){
   try{
     const payload = { ...form.value }
     if(isEdit.value && editId.value){
-      await updatePost(editId.value, { BRD_TITLE: payload.BRD_TITLE, BRD_CONTENT: payload.BRD_CONTENT }, payload.BRD_PASSWORD)
+      await updatePost(editId.value, payload, payload.BRD_PASSWORD)
       // after update, navigate to post detail
       router.push({ name: 'BoardPost', params: { post_number: editId.value } })
     } else {
@@ -237,7 +237,9 @@ onMounted(()=>{
       form.value.BRD_TITLE = res.title || res.BRD_TITLE || ''
       form.value.BRD_CONTENT = res.content || res.BRD_CONTENT || ''
       form.value.BRD_USERNAME = res.author || res.BRD_USERNAME || form.value.BRD_USERNAME
-      // leave BRD_PASSWORD empty for user to enter
+      form.value.BRD_CONTENTTYPEID = res.BRD_CONTENTTYPEID || res.content_type || ''
+      form.value.BRD_CONTENTID = res.BRD_CONTENTID || res.content_id || ''
+      selectedType.value = form.value.BRD_CONTENTTYPEID || ''
       if(editor.value) editor.value.innerHTML = form.value.BRD_CONTENT || ''
     }).catch(()=>{
       // ignore load error here

@@ -90,7 +90,9 @@ export async function updatePost(postId, payload = {}, password = '') {
   const body = {
     title: payload.BRD_TITLE || payload.title,
     content: payload.BRD_CONTENT || payload.content,
-    password: password || payload.BRD_PASSWORD || payload.password || ''
+    password: password || payload.BRD_PASSWORD || payload.password || '',
+    content_type: payload.BRD_CONTENTTYPEID || payload.content_type || undefined,
+    content_id: payload.BRD_CONTENTID || payload.content_id || undefined
   }
   const res = await api.put(`/boards/${postId}`, body)
   const item = normalizePost(res.data)
