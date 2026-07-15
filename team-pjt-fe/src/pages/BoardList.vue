@@ -62,9 +62,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchPosts } from '../services/boardApi' // 새로 만든 mock API
+import { fetchPosts } from '../services/boardApi'
 import PostItem from '../components/PostItem.vue'
 import HeaderNav from '../components/HeaderNav.vue'
 
@@ -72,8 +72,6 @@ const route = useRoute()
 const router = useRouter()
 
 const perPage = 10
-
-// 상태
 const posts = ref([])
 const totalCount = ref(0)
 const totalPages = ref(1)
@@ -81,21 +79,23 @@ const currentPage = ref(Number(route.query.page || 1))
 const isLoading = ref(false)
 const error = ref(null)
 
-// 필터 바인딩 (UI에서 사용 중인 것들)
 const filterPeriod = ref(route.query.period || '')
 const filterType = ref(route.query.type || '')
 const q = ref(route.query.q || '')
 
-// ----- 카테고리 기능 추가 ------
+// 카테고리 -> static json 파일 매핑
 const categoryToFile = {
   '관광지': '서울_관광지.json',
-  '축제/행사': '서울_축제공연행사.json',
-  // '맛집': '서울_맛집.json'  <-- 없으면 아래 기본을 사용하거나 변경 요청
-  '맛집': '서울_문화시설.json', // 기본 제안 — 필요시 수정
+  '레포츠': '서울_레포츠.json',
+  '문화시설': '서울_문화시설.json',
+  '쇼핑': '서울_쇼핑.json',
+  '숙박': '서울_숙박.json',
+  '여행코스': '서울_여행코스.json',
+  '축제공연행사': '서울_축제공연행사.json'
 }
 
 async function filterByCategory(items, category){
-  if(!category) return items
+  if(!category || category === '전체') return items
   if(category === '일반'){
     return items.filter(p => !p.content_type && !p.content_id)
   }
@@ -105,13 +105,12 @@ async function filterByCategory(items, category){
     const resp = await fetch(`/static/json/${file}`)
     if(!resp.ok) return items
     const js = await resp.json()
-    const typeId = js.contentTypeId ? String(js.contentTypeId) : null
+    const typeId = js.contentTypeId ? String(js.contentTypeId) : (js.contentType ? String(js.contentType) : null)
     const ids = new Set((js.items || []).map(i => String(i.contentid)))
     return items.filter(p => {
       const pt = p.content_type ? String(p.content_type) : null
       const pid = p.content_id ? String(p.content_id) : null
-      // match by stored content_type (could be numeric id or filename) or by content_id present in JSON
-      if(pt && (typeId && pt === typeId)) return true
+      if(typeId && pt && pt === typeId) return true
       if(pt && pt === file) return true
       if(pid && ids.has(pid)) return true
       return false
@@ -120,9 +119,7 @@ async function filterByCategory(items, category){
     return items
   }
 }
-// ----- 카테고리 기능 추가 End ------
 
-// 로드 함수: 쿼리/필터에 따라 fetchPosts 호출
 async function load() {
   isLoading.value = true
   error.value = null
@@ -132,17 +129,15 @@ async function load() {
   const type = route.query.type || filterType.value
   const query = route.query.q || q.value
   try {
-    // fetch all posts first (we will page after filtering)
+    // 서버에서 모든 게시글을 한 번 가져와서 카테고리 필터 후 클라이언트 페이지네이션
     const resAll = await fetchPosts({ page: 1, perPage: 10000, period, type, q: query })
     let allItems = resAll.data || []
 
-    // apply category filter if present
     const cat = route.query.category
     if (cat) {
       allItems = await filterByCategory(allItems, String(cat))
     }
 
-    // now paginate client-side
     totalCount.value = allItems.length
     totalPages.value = Math.max(1, Math.ceil(totalCount.value / perPage))
     const next = Math.max(1, Math.min(Number(page || 1), totalPages.value))
@@ -159,7 +154,6 @@ async function load() {
   }
 }
 
-// 페이지 이동 함수들 — router.push로 쿼리 동기화
 function goto(n) {
   const next = Math.max(1, Math.min(Number(n) || 1, totalPages.value))
   router.push({ query: { ...route.query, page: next } })
@@ -167,7 +161,6 @@ function goto(n) {
 function prevPage() { if (currentPage.value > 1) goto(currentPage.value - 1) }
 function nextPage() { if (currentPage.value < totalPages.value) goto(currentPage.value + 1) }
 
-// 필터 적용: 페이지 리셋 + 쿼리 갱신 + 재조회
 function applyFilters() {
   const newQuery = { ...route.query, page: 1 }
   if (filterPeriod.value) newQuery.period = filterPeriod.value; else delete newQuery.period
@@ -176,12 +169,10 @@ function applyFilters() {
   router.push({ query: newQuery })
 }
 
-// navigate to write page
 function goWrite(){
   router.push({ name: 'BoardWrite' })
 }
 
-// 쿼리 변경을 감지해서 로드
 onMounted(load)
 watch(() => route.query, () => { load() }, { deep: true })
 </script>

@@ -1,20 +1,24 @@
-<script setup>
-</script>
-
 <template>
   <header class="topbar">
-    <router-link to="/" class="brand"><span class = "brand">로컬 허브</span> Local Hub</router-link>
-      <nav class="site-nav">
-        <router-link :to="{ name: 'Board', query: { category: '관광지' } }">관광지</router-link>
-        <router-link :to="{ name: 'Board', query: { category: '맛집' } }">맛집</router-link>
-        <router-link :to="{ name: 'Board', query: { category: '축제/행사' } }">축제/행사</router-link>
-        <router-link :to="{ name: 'Board', query: { category: '일반' } }">일반</router-link>
-      </nav>
+    <router-link to="/" class="brand"><span class="brand">로컬 허브</span> Local Hub</router-link>
+    <nav class="site-nav">
+      <router-link :to="{ name: 'Board' }">전체</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '관광지' } }">관광지</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '레포츠' } }">레포츠</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '문화시설' } }">문화시설</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '쇼핑' } }">쇼핑</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '숙박' } }">숙박</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '여행코스' } }">여행코스</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '축제공연행사' } }">축제/공연/행사</router-link>
+      <router-link :to="{ name: 'Board', query: { category: '일반' } }">일반</router-link>
+    </nav>
   </header>
 </template>
 
-<style scoped>
+<script setup>
+</script>
 
+<style scoped>
 .topbar {
   display:flex;
   align-items:center;
