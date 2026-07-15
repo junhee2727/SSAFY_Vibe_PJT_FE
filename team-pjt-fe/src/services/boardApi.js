@@ -12,16 +12,24 @@ function formatDate(src){
 }
 
 function normalizePost(item){
+  const rawContentType = item.content_type ?? item.contentType ?? item.contenttypeid ?? item.BRD_CONTENTTYPEID ?? item.contentTypeId ?? null
+  const rawContentId = item.content_id ?? item.contentId ?? item.contentid ?? item.BRD_CONTENTID ?? null
+  const content_type = rawContentType != null ? String(rawContentType) : null
+  const content_id = rawContentId != null ? String(rawContentId) : null
+
   return {
-    id: item.id ?? item.BRD_SEQ ?? item.contentid ?? '',
-    title: item.title ?? item.BRD_TITLE ?? item.title ?? '',
+    id: item.id ?? item.BRD_SEQ ?? content_id ?? '',
+    title: item.title ?? item.BRD_TITLE ?? '',
     author: item.username ?? item.author ?? item.BRD_USERNAME ?? '익명',
     date: item.created_at ? formatDate(item.created_at) : item.date ?? item.BRD_CREATE ?? '',
     views: item.views ?? 0,
     content: item.content ?? item.BRD_CONTENT ?? '',
     BRD_SEQ: item.BRD_SEQ ?? String(item.id ?? ''),
-    BRD_CONTENTTYPEID: item.content_type ?? item.BRD_CONTENTTYPEID ?? item.BRD_CONTENTTYPEID ?? item.contentType ?? undefined,
-    BRD_CONTENTID: item.content_id ?? item.BRD_CONTENTID ?? item.BRD_CONTENTID ?? undefined
+    BRD_CONTENTTYPEID: content_type ?? undefined,
+    BRD_CONTENTID: content_id ?? undefined,
+    // important: provide both canonical names used by filters
+    content_type,
+    content_id
   }
 }
 
