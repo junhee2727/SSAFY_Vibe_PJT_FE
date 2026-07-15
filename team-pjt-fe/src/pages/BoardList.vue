@@ -64,7 +64,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchPosts } from '../services/BoardApi' // 새로 만든 mock API
+import { fetchPosts } from '../services/boardApi' // 새로 만든 mock API
 import PostItem from '../components/PostItem.vue'
 import HeaderNav from '../components/HeaderNav.vue'
 

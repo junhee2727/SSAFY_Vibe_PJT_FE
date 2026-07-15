@@ -1,4 +1,4 @@
-// src/services/mockBoardApi.js
+// src/services/mockboardApi.js
 const _all = [
   { id:15, title:'Lorem ipsum dolor sit ametLorem ipsum ...', author:'이준희', date:'2026.08.13', views:31, category:1, BRD_SEQ:'15' },
   { id:14, title:'Lorem ipsum dolor sit ametLorem ipsum ...', author:'이준희', date:'2026.08.13', views:31, category:1, BRD_SEQ:'14' },
