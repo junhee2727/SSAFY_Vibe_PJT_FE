@@ -28,6 +28,20 @@
 
         <article v-if="!isLoading && !error" class="post-content" v-html="sanitizedContent"></article>
 
+        <!-- reactions: 좋아요 / 게시글 북마크 (post-level only) -->
+        <div class="reactions">
+          <button type="button" class="btn like" :class="{ active: liked }" @click="toggleLike">
+            <span class="heart">❤</span>
+            <span class="label">좋아요</span>
+            <span class="count">{{ likeCount }}</span>
+          </button>
+
+          <button type="button" class="btn bookmark" :class="{ active: postBookmarked }" @click="togglePostBookmark">
+            <span class="icon">🔖</span>
+            <span class="label">북마크</span>
+          </button>
+        </div>
+
         <div class="card-footer">
           <button class="btn" @click="backToList">← 목록으로</button>
           <div class="footer-actions">
@@ -69,7 +83,7 @@
     </main>
 
     <aside class="side-col">
-      <!-- 관련 장소가 있을 때 -->
+      <!-- 관련 장소 카드: 장소 북마크 버튼 제거 (장소 북마크는 더 이상 사용하지 않음) -->
       <div class="sidebar-card" v-if="relatedInfo">
         <div class="sidebar-head">
           <span class="pin">📍</span>
@@ -125,7 +139,19 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HeaderNav from '../components/HeaderNav.vue'
 import DOMPurify from 'dompurify'
-import { fetchPostDetail, fetchComments, createComment, deleteComment, deletePost } from '../services/boardApi'
+import {
+  fetchPostDetail,
+  fetchComments,
+  createComment,
+  deleteComment,
+  deletePost,
+  postLike,
+  deleteLike,
+  getLikeStatus,
+  postBookmark,
+  deleteBookmark,
+  getBookmarkStatus
+} from '../services/boardApi'
 import RelatedMapModal from '../components/RelatedMapModal.vue'
 
 const route = useRoute()
@@ -183,6 +209,11 @@ const subTitle = computed(()=>{
   return parts[1] || ''
 })
 
+/* Post reaction state (post-level only) */
+const liked = ref(false)
+const likeCount = ref(0)
+const postBookmarked = ref(false)
+
 async function fetchJsonFile(typeFile){
   const tries = [`/static/json/${typeFile}`, `/json/${typeFile}`]
   for(const p of tries){
@@ -202,6 +233,24 @@ async function load(){
     const res = await fetchPostDetail(id)
     post.value = res
 
+    // likes: initialize from server
+    likeCount.value = Number(res.like_count || 0)
+    try{
+      const s = await getLikeStatus(res.id ?? res.BRD_SEQ)
+      if(s){
+        liked.value = !!s.liked
+        likeCount.value = Number(s.like_count ?? likeCount.value)
+      }
+    }catch(e){ /* ignore */ }
+
+    // post bookmark status
+    try{
+      const pb = await getBookmarkStatus('board', String(res.id ?? res.BRD_SEQ))
+      if(pb){
+        postBookmarked.value = !!pb.bookmarked
+      }
+    }catch(e){ /* ignore */ }
+
     comments.value = await fetchComments(id)
 
     relatedInfo.value = null
@@ -213,7 +262,10 @@ async function load(){
         if(data){
           const arr = Array.isArray(data) ? data : (data.items || [])
           const found = arr.find(it => (it.title && it.title === contentId) || (it.contentid && String(it.contentid) === String(contentId)))
-          if(found){ found._source = typeFile; relatedInfo.value = found }
+          if(found){
+            found._source = typeFile
+            relatedInfo.value = found
+          }
         }
       }catch(e){ /* ignore */ }
     }
@@ -239,6 +291,36 @@ async function doDeletePost(){
 function backToList(){
   const page = route.query.page
   router.push({ name: 'Board', query: page ? { page } : {} })
+}
+
+async function toggleLike(){
+  const id = post.value.BRD_SEQ || post.value.id
+  if(!id) return
+  try{
+    if(liked.value){
+      const res = await deleteLike(id)
+      liked.value = !!res.liked
+      likeCount.value = Number(res.like_count ?? Math.max(0, likeCount.value-1))
+    } else {
+      const res = await postLike(id)
+      liked.value = !!res.liked
+      likeCount.value = Number(res.like_count ?? (likeCount.value+1))
+    }
+  }catch(e){ alert(e.message || '좋아요 처리 실패') }
+}
+
+async function togglePostBookmark(){
+  const id = post.value.BRD_SEQ || post.value.id
+  if(!id) return
+  try{
+    if(postBookmarked.value){
+      const res = await deleteBookmark('board', String(id))
+      postBookmarked.value = !!res.bookmarked
+    } else {
+      const res = await postBookmark('board', String(id))
+      postBookmarked.value = !!res.bookmarked
+    }
+  }catch(e){ alert(e.message || '북마크 실패') }
 }
 
 async function postComment(){
@@ -294,11 +376,18 @@ onMounted(load)
 .post-content{ border-top:1px solid #f1f1f1; padding-top:18px; color:#333; line-height:1.7; margin-top:6px }
 .post-content img{ max-width:100%; height:auto; display:block; margin:12px 0; border-radius:6px }
 
+.reactions{ display:flex; gap:12px; margin-top:12px; align-items:center }
+.btn.like{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; border:1px solid #e6ede7; background:#fff }
+.btn.like .count{ margin-left:6px; background:#eef7f1; color:#0a7a3a; padding:2px 8px; border-radius:999px; font-weight:600 }
+.btn.like.active{ background:#ffe9ee; border-color:#ffccd6 }
+.btn.bookmark{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; border:1px solid #e6ede7; background:#fff }
+.btn.bookmark.active{ background:#fffbe6; border-color:#ffe9b3 }
+
 .card-footer{ display:flex; justify-content:space-between; align-items:center; margin-top:18px; padding-top:12px; border-top:1px solid #f4f4f4 }
 .footer-actions button{ margin-left:8px }
 
 .side-col{ display:flex; flex-direction:column; gap:14px }
-.sidebar-card{ background:#fff; border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(22,42,31,0.04); border:1px solid rgba(0,0,0,0.04) }
+.sidebar-card{ position:relative; background:#fff; border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(22,42,31,0.04); border:1px solid rgba(0,0,0,0.04) }
 .sidebar-head{ display:flex; gap:8px; align-items:center; margin-bottom:8px }
 .pin{ display:inline-block; width:28px; height:28px; border-radius:50%; background:#eef9f1; color:#0a7a3a; display:flex; align-items:center; justify-content:center; font-size:16px }
 .sidebar-img{ width:100%; height:180px; object-fit:cover; border-radius:8px; margin-bottom:12px }
@@ -308,7 +397,6 @@ onMounted(load)
 .tag-row{ display:flex; gap:8px; margin-bottom:12px }
 .chip{ background:#eef7f1; color:#0a7a3a; padding:6px 10px; border-radius:10px; font-size:0.85rem }
 
-/* placeholder styles */
 .placeholder-img{ width:100%; height:160px; object-fit:contain; border-radius:8px; background:transparent; margin-bottom:12px }
 .placeholder-title{ font-size:16px; font-weight:700; text-align:center; margin:8px 0 4px 0; color:#163a31 }
 .placeholder-text{ color:#6b7972; font-size:0.94rem; text-align:center; margin:0 0 10px 0; line-height:1.4 }
