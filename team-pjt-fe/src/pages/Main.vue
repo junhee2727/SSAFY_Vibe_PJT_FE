@@ -57,7 +57,7 @@ async function loadAllPosts() {
   isLoadingPosts.value = true
   postsError.value = null
   try {
-    const res = await fetchPosts({ page: 1, perPage: 100 })
+    const res = await fetchPosts({ page: 1, perPage: 200 })
     const items = res.data || []
 
     posts.value = items.map(p => ({
