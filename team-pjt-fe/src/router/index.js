@@ -12,7 +12,8 @@ const routes = [
   { path: '/board/:post_number', name: 'BoardPost', component: BoardPost, props:true},
   { path: '/board/write', name: 'BoardWrite', component: BoardWrite, props:true},
   { path: '/content-search', name: 'ContentSearch', component: ContentSearch },
-  { path: '/chat', name: 'Chat', component: Chat }
+  { path: '/chat', name: 'Chat', component: Chat },
+  { path: '/festival-calendar', name: 'FestivalCalendar', component: () => import('../pages/FestivalCalendar.vue') }
 ]
 
 export default createRouter({
