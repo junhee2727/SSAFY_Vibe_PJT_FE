@@ -1,7 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { fetchPosts } from '../services/boardApi'
 import PostItemBrief from './PostItemBrief.vue'
+
+const props = defineProps({
+  param: { type: [Number, String], default: 0 }
+})
 
 const posts = ref([])
 const isLoading = ref(false)
@@ -16,6 +20,31 @@ const categoryToFile = {
   '여행코스': '서울_여행코스.json',
   '축제공연행사': '서울_축제공연행사.json'
 }
+
+const paramToLabel = {
+  0: null, // 전체(최근)
+  1: '레포츠',
+  2: '문화시설',
+  3: '쇼핑',
+  4: '숙박',
+  5: '여행코스',
+  6: '축제공연행사'
+}
+
+// section title map (display labels)
+const titleMap = {
+  0: '최근 게시글',
+  1: '레포츠',
+  2: '문화시설',
+  3: '쇼핑',
+  4: '숙박',
+  5: '여행 코스',
+  6: '축제/공연/행사'
+}
+const sectionTitle = computed(() => {
+  const p = Number(props.param ?? 0)
+  return titleMap[p] ?? '최근 게시글'
+})
 
 const categoryIndex = ref({})
 const indexBuilt = ref(false)
@@ -33,7 +62,7 @@ async function ensureCategoryIndex() {
         const ids = new Set((js.items || []).map(i => String(i.contentid ?? i.contentId ?? i.contentID)))
         categoryIndex.value[label] = { file, typeId, ids }
         break
-      } catch (e) { /* try next candidate */ }
+      } catch (e) { /* next candidate */ }
     }
   }
   indexBuilt.value = true
@@ -54,7 +83,7 @@ async function loadRecent() {
   isLoading.value = true
   error.value = null
   try {
-    const res = await fetchPosts({ page: 1, perPage: 20 })
+    const res = await fetchPosts({ page: 1, perPage: 100 })
     const items = res.data || []
     await ensureCategoryIndex()
     const mapped = items.map(p => ({
@@ -63,7 +92,16 @@ async function loadRecent() {
       date: p.date,
       categoryLabel: classifyPost(p)
     }))
-    posts.value = mapped.slice(0, 5)
+
+    const paramNum = Number(props.param ?? 0)
+    const wantedLabel = paramToLabel[paramNum] ?? null
+
+    let filtered = mapped
+    if (paramNum !== 0 && wantedLabel) {
+      filtered = mapped.filter(m => m.categoryLabel === wantedLabel)
+    }
+
+    posts.value = filtered.slice(0, 5)
   } catch (e) {
     error.value = e?.message || '최근 게시글을 불러오는 중 오류가 발생했습니다.'
   } finally {
@@ -72,11 +110,12 @@ async function loadRecent() {
 }
 
 onMounted(loadRecent)
+watch(() => props.param, () => loadRecent())
 </script>
 
 <template>
   <section>
-    <h3 class="section-title">최근 게시글</h3>
+    <h3 class="section-title">{{ sectionTitle }}</h3>
 
     <div v-if="isLoading">불러오는 중...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
