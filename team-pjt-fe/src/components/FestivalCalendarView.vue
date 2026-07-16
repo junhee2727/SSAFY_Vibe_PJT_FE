@@ -251,6 +251,7 @@ a.fc-event.fc-daygrid-dot-event,
 .fc .fc-daygrid-day-frame,
 .fc .fc-daygrid-day-events {
   overflow: hidden !important;
+  min-height: 85px !important;
 }
 
 /* background opacity */
