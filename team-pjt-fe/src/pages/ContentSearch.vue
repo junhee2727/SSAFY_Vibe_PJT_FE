@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -69,24 +69,87 @@ const searchQuery = ref(route.query.q || '')
 const searchResults = ref([])
 const searching = ref(false)
 
-async function searchContent(){
-  searchResults.value = []
-  if(!selectedType.value || !searchQuery.value) return
-  searching.value = true
-  try{
-    // 원본 로직 유지: 환경에 따라 경로를 /json/ 또는 /static/json/로 조정 필요
-    const res = await fetch(`../../json/${selectedType.value}`)
-    if(!res.ok) return
+// 캐시: type -> 원본 배열
+const typeCache = {}
+
+async function fetchTypeArray(type) {
+  if (!type) return []
+  if (typeCache[type]) return typeCache[type] // 캐시 사용
+
+  try {
+    const res = await fetch(`../../json/${type}`)
+    if (!res || !res.ok) { typeCache[type] = []; return typeCache[type] }
     const data = await res.json()
     const arr = Array.isArray(data) ? data : (data.items || [])
-    const ql = String(searchQuery.value).toLowerCase()
-    const items = arr.map((d, idx)=>({ _idx: idx, title: d.title || d.name || d.주소 || d.명칭 || d.contentid, raw: d }))
-                    .filter(x=> x.title && x.title.toLowerCase().includes(ql))
-    searchResults.value = items
-  }catch(e){
-    // ignore
-  }finally{ searching.value = false }
+    typeCache[type] = arr
+    return arr
+  } catch {
+    typeCache[type] = []
+    return []
+  }
 }
+
+async function buildListFromArray(arr) {
+  return arr
+    .map((d, idx) => ({ _idx: idx, title: d.title || d.name || d.주소 || d.명칭 || d.contentid, raw: d }))
+    .filter(x => x.title)
+}
+
+async function searchContent(){
+  searchResults.value = []
+  if (!selectedType.value) return
+  searching.value = true
+  try {
+    const arr = await fetchTypeArray(selectedType.value) // 캐시 활용
+    const ql = String(searchQuery.value || '').toLowerCase().trim()
+    let items = await buildListFromArray(arr)
+    if (ql) items = items.filter(x => x.title.toLowerCase().includes(ql))
+    searchResults.value = items
+  } catch (e) {
+    // UX 유지: 에러 시 빈 배열
+    searchResults.value = []
+  } finally {
+    searching.value = false
+  }
+}
+
+let debounceTimer = null
+const DEBOUNCE_MS = 300
+
+// 타입 변경 시: 캐시가 있으면 즉시 로컬에서 결과 생성, 없으면 fetch
+watch(selectedType, async (v) => {
+  if (!v) { searchResults.value = []; return }
+  if (typeCache[v]) {
+    const arr = typeCache[v]
+    const ql = String(searchQuery.value || '').toLowerCase().trim()
+    let items = await buildListFromArray(arr)
+    if (ql) items = items.filter(x => x.title.toLowerCase().includes(ql))
+    searchResults.value = items
+  } else {
+    await searchContent()
+  }
+}, { immediate: !!selectedType.value })
+
+// 검색어 입력 시 디바운스하여 캐시 내 필터링(캐시 없으면 fetch)
+watch(searchQuery, () => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(async () => {
+    if (!selectedType.value) { searchResults.value = []; return }
+    if (typeCache[selectedType.value]) {
+      const arr = typeCache[selectedType.value]
+      const ql = String(searchQuery.value || '').toLowerCase().trim()
+      let items = await buildListFromArray(arr)
+      if (ql) items = items.filter(x => x.title.toLowerCase().includes(ql))
+      searchResults.value = items
+    } else {
+      await searchContent()
+    }
+  }, DEBOUNCE_MS)
+})
+
+onBeforeUnmount(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
 
 function selectAndSend(item){
   if(!window.opener) return
@@ -129,7 +192,7 @@ function selectAndSend(item){
 /* inputs */
 .control{
   padding:10px 12px;
-  border-radius:8px;
+  border-radius:4px;
   border:1px solid #e6e6e6;
   background: #fff;
   font-size:14px;
