@@ -6,13 +6,19 @@
     <div v-if="loading" class="loading">불러오는 중...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
 
-    <ul class="posts" v-else>
-      <li v-for="p in posts" :key="p.id" class="post-row-wrapper">
-        <router-link :to="{ name: 'BoardPost', params: { post_number: p.id } }" class="post-link">
-          <PostItem :id="p.id" :title="p.title" :author="p.author" :date="p.date" :views="p.views" />
-        </router-link>
-      </li>
-    </ul>
+    <div v-else>
+      <div v-if="posts.length === 0" class="empty-state">
+        <div class="empty-text">좋아요한 글이 없습니다.</div>
+      </div>
+
+      <ul v-else class="posts">
+        <li v-for="p in posts" :key="p.id" class="post-row-wrapper">
+          <router-link :to="{ name: 'BoardPost', params: { post_number: p.id } }" class="post-link">
+            <PostItem :id="p.id" :title="p.title" :author="p.author" :date="p.date" :views="p.views" />
+          </router-link>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>
 
@@ -51,4 +57,18 @@ onMounted(async () => {
 .post-link { display:block; color:inherit; text-decoration:none; padding:10px 8px; }
 .post-link:hover { background: #fbfdff; }
 .loading, .error { padding:12px; color:#666 }
+
+/* empty state center */
+.empty-state {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:220px;
+  padding:24px;
+}
+.empty-text {
+  color:#666;
+  font-size:1.05rem;
+  text-align:center;
+}
 </style>
