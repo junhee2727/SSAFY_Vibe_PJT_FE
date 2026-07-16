@@ -343,5 +343,8 @@ watch(
 .controls-right{ display:flex; align-items:center; }
 .control { padding:8px 10px; border:1px solid #ccc; border-radius:2px; background:#fff; }
 .search { flex:1 1 320px; }
-.btn { padding:8px 14px; border:1px solid #333; background:#fff; cursor:pointer; }
+.btn { display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:8px; border:1px solid #e6e6e6;
+  background:#fff; color:#222; cursor:pointer; font-size:14px; }
+.btn.primary { background:#0a58ca; color:#fff; border:none; padding:10px 16px;}
 </style>
