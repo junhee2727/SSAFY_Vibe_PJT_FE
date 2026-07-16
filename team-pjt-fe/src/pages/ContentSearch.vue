@@ -19,16 +19,22 @@
       <div v-if="searching" class="status">검색중...</div>
 
       <div v-else>
-        <div v-if="searchResults.length" class="results">
+        <div v-if="searchResults.length" class="results" role="list">
           <ul>
-            <li v-for="item in searchResults" :key="item._idx">
-              <button class="result-item" @click="selectAndSend(item)">{{ item.title }}</button>
+            <li v-for="item in searchResults" :key="item._idx" class="result-row" role="listitem">
+              <button class="result-item" @click="selectAndSend(item)">
+                <span class="dot" aria-hidden="true"></span>
+                <span class="title">{{ item.title }}</span>
+                <!-- 오른쪽 chevron -->
+                <svg class="chev" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                </svg>
+              </button>
             </li>
           </ul>
         </div>
 
         <div v-else class="empty-state" aria-live="polite">
-          <!-- magnifier icon (inline SVG) -->
           <svg class="empty-icon" viewBox="0 0 64 64" fill="none" aria-hidden="true">
             <circle cx="27" cy="27" r="16" stroke="#cfd8e3" stroke-width="3" fill="#f7f9fc"/>
             <path d="M41 41 L56 56" stroke="#cfd8e3" stroke-width="3" stroke-linecap="round"/>
@@ -68,13 +74,14 @@ async function searchContent(){
   if(!selectedType.value || !searchQuery.value) return
   searching.value = true
   try{
-    // 기존 로직과 동일: fetch 경로는 원본 유지 (환경에 따라 /json/ 또는 /static/json/으로 조정 필요)
+    // 원본 로직 유지: 환경에 따라 경로를 /json/ 또는 /static/json/로 조정 필요
     const res = await fetch(`../../json/${selectedType.value}`)
     if(!res.ok) return
     const data = await res.json()
     const arr = Array.isArray(data) ? data : (data.items || [])
     const ql = String(searchQuery.value).toLowerCase()
-    const items = arr.map((d, idx)=>({ _idx: idx, title: d.title || d.name || d.주소 || d.명칭 || d.contentid, raw: d })).filter(x=> x.title && x.title.toLowerCase().includes(ql))
+    const items = arr.map((d, idx)=>({ _idx: idx, title: d.title || d.name || d.주소 || d.명칭 || d.contentid, raw: d }))
+                    .filter(x=> x.title && x.title.toLowerCase().includes(ql))
     searchResults.value = items
   }catch(e){
     // ignore
@@ -90,22 +97,21 @@ function selectAndSend(item){
 </script>
 
 <style scoped>
-/* 스타일: 이미지 기준 추정치
-   - primary blue: 기존 프로젝트와 일관되게 #0a58ca 사용 (추정)
-   - subtle border: #eef2f6 / #e9eef5 추정
-   - font: 시스템 계열 사용 (실제 디자인 폰트가 있으면 교체)
+/* 추정 색상/타입:
+   - primary: #0a58ca (프로젝트 기본 유지)
+   - border: #eef2f6 (연한 회색)
+   - muted: #6b7280
+   설명은 주석으로 표기했습니다.
 */
 
 :root{
-  --primary: #0a58ca; /* 추정 / 기존과 호환 */
+  --primary: #0a58ca;
   --muted: #6b7280;
   --border: #eef2f6;
-  --bg: #ffffff;
 }
 
-.content-search{ padding: 20px 18px; font-family: inherit; background: transparent; }
-
-/* 중앙 컨테이너 폭 맞춤 */
+/* 외부 레이아웃 */
+.content-search{ padding: 20px 18px; font-family: inherit; }
 .container{ max-width:1100px; margin: 0 auto; }
 
 /* 제목 */
@@ -120,7 +126,7 @@ function selectAndSend(item){
   flex-wrap:wrap;
 }
 
-/* 공통 input/select 스타일 */
+/* inputs */
 .control{
   padding:10px 12px;
   border-radius:8px;
@@ -131,14 +137,9 @@ function selectAndSend(item){
   box-sizing:border-box;
 }
 .control.small{ min-width:200px; max-width:240px; }
+.input-search{ min-width:360px; flex:1 1 420px; }
 
-/* 검색 입력은 넉넉하게 확장 */
-.input-search{
-  min-width:360px;
-  flex:1 1 420px;
-}
-
-/* 검색 버튼 */
+/* 버튼 */
 .btn{
   display:inline-flex;
   align-items:center;
@@ -155,38 +156,80 @@ function selectAndSend(item){
 .btn.primary{
   background:#0a58ca;
   color:#fff;
-  border: none;
+  border:none;
   box-shadow: 0 2px 8px rgba(10,90,200,0.08);
 }
 
 /* 구분선 */
-.divider{
-  border:0;
-  height:1px;
-  background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02));
-  margin: 8px 0 24px;
-}
+.divider{ border:0; height:1px; background: linear-gradient(90deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02)); margin: 8px 0 24px; }
 
-/* 검색 상태 텍스트 */
+/* 검색 상태 */
 .status{ color:var(--muted); font-size:14px; margin-bottom:12px; }
 
-/* 결과 리스트 */
-.results{ border-radius:8px; overflow:hidden; border:1px solid #f3f6fa; background:#fff; }
-.result-item{
-  display:block;
-  width:100%;
-  text-align:left;
-  padding:12px 14px;
-  border-bottom:1px solid #f5f7fb;
-  background:transparent;
-  font-size:14px;
-  color:#222;
+/* 결과 카드: 고정 최대 높이 + 스크롤 */
+.results{
+  border-radius:8px;
+  overflow:auto;
+  border:1px solid #f3f6fa;
+  background:#fff;
+  max-height:420px; /* 이미지 비율과 유사하게 높이 확보 */
+  box-shadow: 0 2px 8px rgba(20,30,40,0.03);
 }
+
+/* reset list */
+.results ul{ list-style:none; margin:0; padding:0; }
+
+/* 각 행 */
+.result-row{ margin:0; }
+.result-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  padding:12px 16px;
+  text-align:left;
+  background:transparent;
+  border-bottom:1px solid #f2f5f9;
+  cursor:pointer;
+  color:#222;
+  font-size:14px;
+  box-sizing:border-box;
+  border: 1px solid #e6e6e6;
+  border-radius: 4px;
+}
+
+/* 작은 왼쪽 도트 */
+.result-item .dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#c6cbd6; /* 추정: 연한 회색 */
+  flex:0 0 auto;
+}
+
+/* 제목: 줄임표 처리 */
+.result-item .title{
+  flex:1 1 auto;
+  min-width:0; /* 중요: flex 항목이 줄어들도록 허용 */
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* 오른쪽 화살표 */
+.result-item .chev{ width:18px; height:18px; flex:0 0 auto; color:#9aa5b1; }
+
+/* hover/active */
 .result-item:hover{ background:#fbfdff; }
 
-/* 빈 상태 스타일 (이미지 중앙 정렬) */
+/* 스크롤바 (간단 스타일) */
+.results::-webkit-scrollbar{ width:10px; height:10px; }
+.results::-webkit-scrollbar-thumb{ background: rgba(0,0,0,0.06); border-radius:6px; }
+.results::-webkit-scrollbar-track{ background: transparent; }
+
+/* 빈 상태 */
 .empty-state{
-  min-height:320px; /* 이미지처럼 여유있는 높이 */
+  min-height:320px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -194,17 +237,17 @@ function selectAndSend(item){
   gap:10px;
   color:var(--muted);
   text-align:center;
-  background: transparent;
   padding: 36px 12px;
 }
 .empty-icon{ width:72px; height:72px; opacity:0.95; }
 .empty-title{ font-size:18px; color:#222; font-weight:600; margin-top:6px; }
 .empty-sub{ font-size:13px; color:#8b94a0; margin-top:4px; }
 
-/* 반응형: 좁은 화면에서는 입력이 줄바꿈 */
+/* 반응형 */
 @media (max-width:720px){
   .controls{ gap:8px; }
   .input-search{ min-width:120px; flex: 1 1 100%; }
   .control.small{ min-width:100px; max-width:100%; }
+  .results{ max-height:360px; }
 }
 </style>
