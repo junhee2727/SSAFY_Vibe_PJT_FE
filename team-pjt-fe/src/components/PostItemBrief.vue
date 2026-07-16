@@ -15,6 +15,7 @@ defineProps({ title: String, date: String })
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+  width: 100%;
 }
 
 /* 제목이 줄어들면 말줄임표 처리 */
@@ -33,5 +34,6 @@ defineProps({ title: String, date: String })
   flex: 0 0 auto;
   margin-left: 1rem;
   white-space: nowrap;
+  padding-right: 5px;
 }
 </style>
