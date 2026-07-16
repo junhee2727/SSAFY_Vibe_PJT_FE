@@ -135,9 +135,9 @@ watch(() => props.param, () => loadRecent())
 <style scoped>
 .section-title { margin:0 0 1rem 0; font-size:1.25rem; }
 .posts { list-style:none; padding:0; margin:0; }
-.post-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid #f0f0f0; }
+.post-row { display:flex; align-items:center; gap:12px; padding:8px 4px; border:1px solid #f0f0f0; overflow:hidden; margin-bottom: 8px; border-radius: 15px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);}
 .badge { background:#eef6ff; color:#036; padding:2px 8px; border-radius:12px; font-size:0.85rem; white-space:nowrap; }
-.post-link { display:flex; align-items:center; gap:12px; color:inherit; text-decoration:none; width:100%; }
+.post-link { display:flex; align-items:center; gap:12px; colaor:inherit; text-decoration:none; width:100%; min-width: 0;}
 .empty { color:#666; padding:8px 0 }
 .error { color:#b00 }
 </style>
