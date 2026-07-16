@@ -251,7 +251,31 @@ function goWrite(){
 }
 
 onMounted(load)
-watch(() => route.query, () => { load() }, { deep: true })
+
+// when route.query changes, if category changed and previous page was >1,
+// replace the route to set page=1 first (avoids loading the old page),
+// otherwise just load.
+watch(
+  () => route.query,
+  (newQ, oldQ) => {
+    const newCat = newQ && newQ.category
+    const oldCat = oldQ && oldQ.category
+
+    if (newCat !== oldCat) {
+      const oldPage = oldQ && oldQ.page
+      if (oldPage && Number(oldPage) !== 1) {
+        // replace to set page=1 for the new category, then return.
+        const merged = { ...newQ, page: 1 }
+        router.replace({ query: merged })
+        return
+      }
+    }
+
+    // otherwise load normally for current query
+    load()
+  },
+  { deep: true }
+)
 </script>
 
 <style scoped>
