@@ -37,16 +37,18 @@
         </div>
       </div>
 
-      <!-- 댓글 영역: 카드 형태, 입력창 왼쪽, 버튼 오른쪽 -->
+      <!-- 댓글 카드 -->
       <section class="comment-card">
         <h3 class="comment-title">댓글 {{ comments.length }}</h3>
 
         <div v-if="comments.length" class="existing-comments">
           <ul class="comment-list">
             <li v-for="c in comments" :key="c.id" class="comment-item">
-              <div class="c-meta"><strong>{{ c.author }}</strong> · {{ c.date }}</div>
-              <div class="c-body">{{ c.content }}</div>
-              <button class="btn small" @click="onDeleteComment(c.id)">삭제</button>
+              <div>
+                <div class="c-meta"><strong>{{ c.author }}</strong> · {{ c.date }}</div>
+                <div class="c-body">{{ c.content }}</div>
+              </div>
+              <div><button class="btn small" @click="onDeleteComment(c.id)">삭제</button></div>
             </li>
           </ul>
         </div>
@@ -67,6 +69,7 @@
     </main>
 
     <aside class="side-col">
+      <!-- 관련 장소가 있을 때 -->
       <div class="sidebar-card" v-if="relatedInfo">
         <div class="sidebar-head">
           <span class="pin">📍</span>
@@ -84,8 +87,25 @@
           </div>
 
           <button class="btn primary full" @click="showMap = true">지도에서 위치 보기</button>
+        </div>
+      </div>
 
-          <div class="sidebar-foot">서울 관광 데이터 기반 정보</div>
+      <!-- 관련 장소가 없을 때 (placeholder) -->
+      <div class="sidebar-card placeholder" v-else>
+        <div class="sidebar-head">
+          <span class="pin">📍</span>
+          <div class="sidebar-head-text">이 글과 연결된 장소</div>
+        </div>
+
+        <img :src="noPlaceImg" alt="no place" class="placeholder-img" />
+
+        <h4 class="placeholder-title">아직 연결된 장소가 없어요</h4>
+        <p class="placeholder-text">현재 이 게시글에는 장소 정보가 연결되어 있지 않습니다.<br/>장소가 연결되면 위치, 주소, 지도 정보로 함께 확인할 수 있어요.</p>
+
+        <div class="placeholder-list">
+          <div class="placeholder-item"><span class="dot">📍</span> 장소명</div>
+          <div class="placeholder-item"><span class="dot">📌</span> 주소/지역</div>
+          <div class="placeholder-item"><span class="dot">🗺️</span> 지도 바로가기</div>
         </div>
       </div>
     </aside>
@@ -148,7 +168,10 @@ const coverImage = computed(()=>{
   }catch(e){ return null }
 })
 
-// split title into main / subtitle on first dash (for nicer layout like screenshot)
+// placeholder image served from public/no_place.png
+const noPlaceImg = `${import.meta.env.BASE_URL ?? '/'}no_place.png`
+
+// split title into main / subtitle on first dash for nicer layout
 const mainTitle = computed(()=>{
   const t = post.value.title || ''
   const parts = t.split(/\s*[-–—:]\s*/, 2)
@@ -285,8 +308,14 @@ onMounted(load)
 .tag-row{ display:flex; gap:8px; margin-bottom:12px }
 .chip{ background:#eef7f1; color:#0a7a3a; padding:6px 10px; border-radius:10px; font-size:0.85rem }
 
-.sidebar-foot{ margin-top:10px; color:#9aa8a0; font-size:0.85rem; text-align:center }
+/* placeholder styles */
+.placeholder-img{ width:100%; height:160px; object-fit:contain; border-radius:8px; background:transparent; margin-bottom:12px }
+.placeholder-title{ font-size:16px; font-weight:700; text-align:center; margin:8px 0 4px 0; color:#163a31 }
+.placeholder-text{ color:#6b7972; font-size:0.94rem; text-align:center; margin:0 0 10px 0; line-height:1.4 }
+.placeholder-list{ display:flex; flex-direction:column; gap:8px; padding:6px 4px; margin-top:6px }
+.placeholder-item{ display:flex; align-items:center; gap:8px; padding:8px 10px; background:#fbfffb; border-radius:8px; color:#22593f; font-size:0.95rem }
 
+/* comments */
 .btn{ padding:8px 12px; border-radius:8px; background:#fff; border:1px solid #d7dfd9; cursor:pointer }
 .btn:hover{ filter:brightness(.98) }
 .btn.primary{ background:#0a9d4a; color:#fff; border:none }
