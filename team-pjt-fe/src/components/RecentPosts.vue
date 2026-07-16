@@ -4,7 +4,8 @@ import { fetchPosts } from '../services/boardApi'
 import PostItemBrief from './PostItemBrief.vue'
 
 const props = defineProps({
-  param: { type: [Number, String], default: 0 }
+  param: { type: [Number, String], default: 0 },
+  items: { type: Array, default: null }
 })
 
 const posts = ref([])
@@ -58,8 +59,9 @@ async function ensureCategoryIndex() {
         const resp = await fetch(path)
         if (!resp.ok) continue
         const js = await resp.json()
-        const typeId = js.contentTypeId !== undefined ? String(js.contentTypeId) : (js.contentType ? String(js.contentType) : null)
-        const ids = new Set((js.items || []).map(i => String(i.contentid ?? i.contentId ?? i.contentID)))
+        const typeId = js.contentTypeId !== undefined && js.contentTypeId !== null ? String(js.contentTypeId) : (js.contentType ? String(js.contentType) : null)
+        const items = Array.isArray(js.items) ? js.items : (Array.isArray(js) ? js : [])
+        const ids = new Set(items.map(i => String(i.contentid ?? i.contentId ?? i.contentID ?? '').trim()).filter(Boolean))
         categoryIndex.value[label] = { file, typeId, ids }
         break
       } catch (e) { /* next candidate */ }
@@ -69,17 +71,45 @@ async function ensureCategoryIndex() {
 }
 
 function classifyPost(p) {
-  if (!p.content_type && !p.content_id) return '일반'
+  if (!p || (!p.content_type && !p.content_id)) return '일반'
+  const pType = p.content_type ? String(p.content_type).trim() : null
+  const pId = p.content_id ? String(p.content_id).trim() : null
+
   for (const [label, info] of Object.entries(categoryIndex.value)) {
     if (!info) continue
-    if (info.typeId && p.content_type && String(p.content_type) === info.typeId) return label
-    if (info.ids && p.content_id && info.ids.has(String(p.content_id))) return label
-    if (p.content_type && String(p.content_type) === info.file) return label
+    if (info.typeId && pType && (pType === info.typeId || (info.typeId && pType === String(info.typeId)))) return label
+    if (info.ids && pId && info.ids.has(pId)) return label
+    if (info.file && pType && (pType === info.file || pType.endsWith(info.file))) return label
   }
   return '기타'
 }
 
+async function applyItemsArray(arr) {
+  // arr may contain categoryLabel already (provided by parent).
+  // If not, classify using local categoryIndex (ensure asynchronously).
+  let working = Array.isArray(arr) ? arr.slice() : []
+  const needClassify = working.some(i => !i.categoryLabel)
+  if (needClassify) {
+    await ensureCategoryIndex()
+    working = working.map(p => ({ ...p, categoryLabel: classifyPost(p) }))
+  }
+  const paramNum = Number(props.param ?? 0)
+  const wantedLabel = paramToLabel[paramNum] ?? null
+  let filtered = working
+  if (paramNum !== 0 && wantedLabel) {
+    filtered = working.filter(m => m.categoryLabel === wantedLabel)
+  }
+  posts.value = filtered.slice(0, 5)
+}
+
 async function loadRecent() {
+  // If parent passed items, use them (avoid fetching)
+  // 변경: 빈 배열도 부모가 제공한 것으로 간주
+  if (Array.isArray(props.items)) {
+    await applyItemsArray(props.items)
+    return
+  }
+
   isLoading.value = true
   error.value = null
   try {
@@ -90,6 +120,8 @@ async function loadRecent() {
       id: p.id,
       title: p.title,
       date: p.date,
+      content_type: p.content_type,
+      content_id: p.content_id,
       categoryLabel: classifyPost(p)
     }))
 
@@ -110,6 +142,10 @@ async function loadRecent() {
 }
 
 onMounted(loadRecent)
+watch(() => props.items, (v) => {
+  if (Array.isArray(v)) applyItemsArray(v)
+  else loadRecent()
+})
 watch(() => props.param, () => loadRecent())
 </script>
 
