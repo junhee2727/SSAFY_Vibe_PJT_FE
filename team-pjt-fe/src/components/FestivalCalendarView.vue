@@ -190,7 +190,7 @@ function escapeHtml(s = '') {
 }
 </script>
 
-<style scoped>
+<style>
 /* Strong overrides to prevent vertical overflow/overlap */
 a.fc-event.fc-daygrid-event,
 a.fc-event.fc-daygrid-dot-event,
@@ -217,6 +217,7 @@ a.fc-event.fc-daygrid-dot-event,
   min-width: 0 !important;
   height: 26px !important;
   overflow: hidden !important;
+  width: 100%;
 }
 
 /* dot */
@@ -242,7 +243,7 @@ a.fc-event.fc-daygrid-dot-event,
 }
 
 /* optional hover-scroll when flagged */
-.evt-title .evt-inner { display:inline-block; transform:translateX(0); transition: transform 0.3s linear; }
+.evt-title .evt-inner { display:block; width: 100%; text-overflow: ellipsis; overflow: hidden; transform:translateX(0); transition: transform 0.3s linear; }
 .evt-title.is-overflow:hover .evt-inner { animation: scroll-left var(--scroll-duration,6s) linear forwards; }
 @keyframes scroll-left { 0%{transform:translateX(0)} 100%{transform:translateX(calc(-1 * var(--scroll-distance)))} }
 
