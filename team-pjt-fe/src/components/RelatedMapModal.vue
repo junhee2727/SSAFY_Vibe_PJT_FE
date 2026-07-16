@@ -3,7 +3,7 @@
     <div class="modal">
       <header class="modal-header">
         <h3>지도 보기</h3>
-        <button class="btn" @click="close">닫기</button>
+        <button class="btn, c-btn-kyb" @click="close">닫기</button>
       </header>
 
       <div class="modal-body">
@@ -82,4 +82,14 @@ onMounted(()=>{ if(props.visible) initMap() })
 .modal-body{ padding:12px }
 .map{ width:100%; height:420px }
 .notice{ color:#666 }
+.c-btn-kyb {
+    background-color: white;
+    border: none;
+    color: red;
+    user-select: none;
+    cursor: pointer;
+    &:hover {
+      text-decoration: underline;
+    }
+}
 </style>
