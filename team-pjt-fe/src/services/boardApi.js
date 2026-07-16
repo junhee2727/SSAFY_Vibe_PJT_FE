@@ -137,3 +137,47 @@ export async function deleteComment(commentId, password = '') {
   const res = await api.delete(`/comments/${commentId}`, { data: { password } })
   return res.data
 }
+
+// Likes
+export async function postLike(postId) {
+  const res = await api.post('/likes', { board_id: Number(postId) })
+  // res.data => { board_id, liked, like_count }
+  return res.data
+}
+export async function deleteLike(postId) {
+  const res = await api.delete(`/likes/${Number(postId)}`)
+  return res.data
+}
+export async function getLikeStatus(postId) {
+  const res = await api.get(`/likes/${Number(postId)}`)
+  return res.data
+}
+
+// bookmarks: use board-specific backend endpoints
+export async function postBookmark(targetType, targetId) {
+  if (targetType === 'board') {
+    const res = await api.post('/bookmarks/board', { board_id: Number(targetId) })
+    return res.data
+  }
+  const body = { target_type: targetType, target_id: String(targetId) }
+  const res = await api.post('/bookmarks', body)
+  return res.data
+}
+
+export async function deleteBookmark(targetType, targetId) {
+  if (targetType === 'board') {
+    const res = await api.delete(`/bookmarks/board/${Number(targetId)}`)
+    return res.data
+  }
+  const res = await api.delete(`/bookmarks/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}`)
+  return res.data
+}
+
+export async function getBookmarkStatus(targetType, targetId) {
+  if (targetType === 'board') {
+    const res = await api.get(`/bookmarks/board/${Number(targetId)}`)
+    return res.data
+  }
+  const res = await api.get(`/bookmarks/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}`)
+  return res.data
+}
