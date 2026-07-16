@@ -38,6 +38,10 @@ export async function loadFestivalEvents() {
       eventhomepage: it.eventhomepage || '',
       agelimit: it.agelimit || '',
       usetimefestival: it.usetimefestival || '',
+      // 이미지 필드 추가 (JSON에 있던 이름들)
+      firstimage: it.firstimage || it.firstimage2 || it.firstImage || null,
+      firstimage2: it.firstimage2 || it.firstimage || null,
+      // 좌표
       mapx: it.mapx || '',
       mapy: it.mapy || '',
       startDate: start,
