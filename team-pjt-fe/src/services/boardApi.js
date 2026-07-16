@@ -181,3 +181,37 @@ export async function getBookmarkStatus(targetType, targetId) {
   const res = await api.get(`/bookmarks/${encodeURIComponent(targetType)}/${encodeURIComponent(targetId)}`)
   return res.data
 }
+
+/* ---------- 새로 추가된 함수: 클라이언트 IP 조회 및 좋아요/북마크 목록 조회 ---------- */
+
+// 클라이언트의 공개 IP를 가져옵니다 (외부 서비스 사용). 실패 시 null 반환.
+export async function fetchClientIp() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json')
+    if (!r.ok) return null
+    const j = await r.json()
+    return j.ip
+  } catch (e) {
+    return null
+  }
+}
+
+// IP 기반으로 좋아요한 게시글 목록을 가져옵니다.
+export async function fetchLikedBoards(ip) {
+  const cfg = ip ? { params: { ip } } : {}
+  const res = await api.get('/likes', cfg)
+  const payload = res.data || {}
+  const raw = payload.posts || payload || []
+  const items = Array.isArray(raw) ? raw : []
+  return items.map(normalizePost)
+}
+
+// IP 기반으로 북마크한 게시글 목록을 가져옵니다.
+export async function fetchBookmarkedBoards(ip) {
+  const cfg = ip ? { params: { ip } } : {}
+  const res = await api.get('/bookmarks', cfg)
+  const payload = res.data || {}
+  const raw = payload.posts || payload || []
+  const items = Array.isArray(raw) ? raw : []
+  return items.map(normalizePost)
+}

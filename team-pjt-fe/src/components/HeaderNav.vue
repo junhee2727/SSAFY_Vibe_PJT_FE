@@ -14,6 +14,24 @@
           <span class="btn-text">축제 캘린더</span>
           <span class="btn-emoji" aria-hidden>🎆</span>
         </router-link>
+
+        <router-link
+          :to="{ name: 'MyLikes' }"
+          class="mini-btn"
+          :class="{ active: $route.name === 'MyLikes' }"
+          aria-pressed="$route.name === 'MyLikes'"
+        >
+          <span class="btn-text">❤ 좋아요</span>
+        </router-link>
+
+        <router-link
+          :to="{ name: 'MyBookmarks' }"
+          class="mini-btn"
+          :class="{ active: $route.name === 'MyBookmarks' }"
+          aria-pressed="$route.name === 'MyBookmarks'"
+        >
+          <span class="btn-text">🔖 북마크</span>
+        </router-link>
       </div>
     </div>
 
@@ -81,8 +99,29 @@
   font-weight:700;
 }
 
+/* mini action buttons (좋아요, 북마크) */
+.brand-actions .mini-btn {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-left:8px;
+  padding:6px 10px;
+  border-radius:6px;
+  color:#222;
+  text-decoration:none;
+  transition: 0.12s;
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+  font-size:0.95rem;
+}
+.brand-actions .mini-btn.active {
+  background:#eef8ff;
+  font-weight:700;
+}
+
 /* small click feeling */
-.calendar-btn:active { transform: translateY(1px); }
+.calendar-btn:active, .brand-actions .mini-btn:active { transform: translateY(1px); }
 
 /* site nav */
 .site-nav a { margin-left:18px; color:#222; text-decoration:none; }

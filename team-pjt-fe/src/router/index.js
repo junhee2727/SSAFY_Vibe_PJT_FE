@@ -13,7 +13,11 @@ const routes = [
   { path: '/board/write', name: 'BoardWrite', component: BoardWrite, props:true},
   { path: '/content-search', name: 'ContentSearch', component: ContentSearch },
   { path: '/chat', name: 'Chat', component: Chat },
-  { path: '/festival-calendar', name: 'FestivalCalendar', component: () => import('../pages/FestivalCalendar.vue') }
+  { path: '/festival-calendar', name: 'FestivalCalendar', component: () => import('../pages/FestivalCalendar.vue') },
+
+  // 새로 추가된 라우트
+  { path: '/my-likes', name: 'MyLikes', component: () => import('../pages/MyLikes.vue') },
+  { path: '/my-bookmarks', name: 'MyBookmarks', component: () => import('../pages/MyBookmarks.vue') }
 ]
 
 export default createRouter({
